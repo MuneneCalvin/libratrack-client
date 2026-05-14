@@ -1,0 +1,23 @@
+export const QUERY_KEYS = {
+  books: ['books'] as const,
+  book: (id: number) => ['books', id] as const,
+  members: ['members'] as const,
+  member: (id: number) => ['members', id] as const,
+  transactions: ['transactions'] as const,
+  memberTransactions: (id: number) => ['transactions', 'member', id] as const,
+  reservations: ['reservations'] as const,
+  memberReservations: (id: number) => ['reservations', 'member', id] as const,
+  fines: ['fines'] as const,
+  memberFines: (id: number) => ['fines', 'member', id] as const,
+  notifications: ['notifications'] as const,
+  reports: {
+    inventory: ['reports', 'inventory'] as const,
+    borrowing: ['reports', 'borrowing'] as const,
+    overdue: ['reports', 'overdue'] as const,
+    fines: ['reports', 'fines'] as const,
+    members: ['reports', 'members'] as const,
+    popularBooks: ['reports', 'popular-books'] as const,
+  },
+  settings: ['settings'] as const,
+  categories: ['categories'] as const,
+};
