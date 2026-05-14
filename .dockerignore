@@ -2,3 +2,9 @@ node_modules
 dist
 .env
 *.env.local
+.git
+.github
+coverage
+tests/
+*.log
+.DS_Store
