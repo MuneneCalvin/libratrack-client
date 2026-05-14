@@ -28,6 +28,6 @@ describe('DataTable', () => {
 
   it('shows loading skeletons when isLoading', () => {
     const { container } = render(<DataTable columns={columns} data={[]} isLoading />);
-    expect(container.querySelectorAll('[class*="animate-pulse"]').length).toBeGreaterThan(0);
+    expect(container.querySelectorAll('[data-slot="skeleton"]')).toHaveLength(5);
   });
 });
