@@ -17,10 +17,9 @@ export default function PortalFinesPage() {
   });
 
   if (!user?.memberId) return <p className="text-text-secondary">Not available.</p>;
+  if (isLoading) return <p className="text-text-secondary">Loading…</p>;
 
   const fines = (data?.data as { data?: { id: number; amount: number; reason: string; isPaid: boolean; isWaived: boolean; createdAt: string }[] })?.data ?? [];
-
-  if (isLoading) return <p className="text-text-secondary">Loading…</p>;
 
   return (
     <div className="space-y-4 max-w-xl">

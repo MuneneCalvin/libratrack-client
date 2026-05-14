@@ -24,10 +24,9 @@ export default function PortalReservationsPage() {
   });
 
   if (!user?.memberId) return <p className="text-text-secondary">Not available.</p>;
+  if (isLoading) return <p className="text-text-secondary">Loading…</p>;
 
   const reservations = (data?.data as { data?: { id: number; book: { title: string; author: string }; status: string; reservedAt: string; expiresAt: string }[] })?.data ?? [];
-
-  if (isLoading) return <p className="text-text-secondary">Loading…</p>;
 
   return (
     <div className="space-y-4 max-w-xl">

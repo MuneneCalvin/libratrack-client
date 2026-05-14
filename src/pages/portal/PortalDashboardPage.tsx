@@ -18,13 +18,12 @@ export default function PortalDashboardPage() {
   const { data: resData } = useQuery({ queryKey: QUERY_KEYS.memberReservations(memberId), queryFn: () => reservationsService.getByMember(memberId, { status: 'PENDING' }), enabled: !!user?.memberId });
 
   if (!user?.memberId) return <p className="text-text-secondary">Not available.</p>;
+  if (isLoading) return <p className="text-text-secondary">Loading…</p>;
 
   const activeTx = (txData?.data as { data?: { id: number; items: { book: { title: string } }[]; dueDate: string; status: string }[] })?.data ?? [];
   const unpaidFines = (finesData?.data as { data?: { id: number; amount: number; reason: string }[] })?.data ?? [];
   const pendingRes = (resData?.data as { data?: { id: number; book: { title: string }; expiresAt: string }[] })?.data ?? [];
   const totalFines = unpaidFines.reduce((s, f) => s + Number(f.amount), 0);
-
-  if (isLoading) return <p className="text-text-secondary">Loading…</p>;
 
   return (
     <div className="space-y-6">
