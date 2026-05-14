@@ -9,18 +9,21 @@ import { formatDate } from '@/lib/utils';
 
 export default function PortalReservationsPage() {
   const { user } = useAuthStore();
-  const memberId = user?.memberId!;
+  const memberId = user?.memberId ?? 0;
   const queryClient = useQueryClient();
 
   const { data, isLoading } = useQuery({
     queryKey: QUERY_KEYS.memberReservations(memberId),
     queryFn: () => reservationsService.getByMember(memberId),
+    enabled: !!user?.memberId,
   });
 
   const cancelMutation = useMutation({
     mutationFn: reservationsService.cancel,
     onSuccess: () => queryClient.invalidateQueries({ queryKey: QUERY_KEYS.memberReservations(memberId) }),
   });
+
+  if (!user?.memberId) return <p className="text-text-secondary">Not available.</p>;
 
   const reservations = (data?.data as { data?: { id: number; book: { title: string; author: string }; status: string; reservedAt: string; expiresAt: string }[] })?.data ?? [];
 
@@ -40,7 +43,7 @@ export default function PortalReservationsPage() {
               <Badge variant={r.status === 'PENDING' ? 'default' : 'secondary'}>{r.status}</Badge>
             </div>
             {r.status === 'PENDING' && (
-              <Button variant="ghost" size="sm" className="text-danger" onClick={() => cancelMutation.mutate(r.id)}>Cancel</Button>
+              <Button variant="ghost" size="sm" className="text-danger" disabled={cancelMutation.isPending} onClick={() => cancelMutation.mutate(r.id)}>Cancel</Button>
             )}
           </CardContent>
         </Card>

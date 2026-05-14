@@ -6,22 +6,25 @@ import { reservationsService } from '@/services/reservations.service';
 import { QUERY_KEYS } from '@/lib/constants';
 import StatsCard from '@/components/StatsCard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { ArrowLeftRight, CalendarCheck, AlertCircle } from 'lucide-react';
 import { formatDate, formatCurrency } from '@/lib/utils';
 
 export default function PortalDashboardPage() {
   const { user } = useAuthStore();
-  const memberId = user?.memberId!;
+  const memberId = user?.memberId ?? 0;
 
-  const { data: txData } = useQuery({ queryKey: QUERY_KEYS.memberTransactions(memberId), queryFn: () => transactionsService.getByMember(memberId, { status: 'ACTIVE', limit: 5 }) });
-  const { data: finesData } = useQuery({ queryKey: QUERY_KEYS.memberFines(memberId), queryFn: () => finesService.getByMember(memberId, { isPaid: 'false' }) });
-  const { data: resData } = useQuery({ queryKey: QUERY_KEYS.memberReservations(memberId), queryFn: () => reservationsService.getByMember(memberId, { status: 'PENDING' }) });
+  const { data: txData, isLoading } = useQuery({ queryKey: QUERY_KEYS.memberTransactions(memberId), queryFn: () => transactionsService.getByMember(memberId, { status: 'ACTIVE', limit: 5 }), enabled: !!user?.memberId });
+  const { data: finesData } = useQuery({ queryKey: QUERY_KEYS.memberFines(memberId), queryFn: () => finesService.getByMember(memberId, { isPaid: 'false' }), enabled: !!user?.memberId });
+  const { data: resData } = useQuery({ queryKey: QUERY_KEYS.memberReservations(memberId), queryFn: () => reservationsService.getByMember(memberId, { status: 'PENDING' }), enabled: !!user?.memberId });
+
+  if (!user?.memberId) return <p className="text-text-secondary">Not available.</p>;
 
   const activeTx = (txData?.data as { data?: { id: number; items: { book: { title: string } }[]; dueDate: string; status: string }[] })?.data ?? [];
   const unpaidFines = (finesData?.data as { data?: { id: number; amount: number; reason: string }[] })?.data ?? [];
   const pendingRes = (resData?.data as { data?: { id: number; book: { title: string }; expiresAt: string }[] })?.data ?? [];
   const totalFines = unpaidFines.reduce((s, f) => s + Number(f.amount), 0);
+
+  if (isLoading) return <p className="text-text-secondary">Loading…</p>;
 
   return (
     <div className="space-y-6">
