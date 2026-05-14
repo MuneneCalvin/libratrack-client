@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { booksService, Book } from '@/services/books.service';
+import { booksService, type Book } from '@/services/books.service';
 import { QUERY_KEYS } from '@/lib/constants';
 import DataTable from '@/components/DataTable';
 import { Button } from '@/components/ui/button';
