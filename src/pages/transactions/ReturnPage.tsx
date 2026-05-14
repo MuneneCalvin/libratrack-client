@@ -1,3 +1,2 @@
-export default function ReturnPage() {
-  return <div>Return</div>;
-}
+import ReturnForm from '@/features/transactions/ReturnForm';
+export default function ReturnPage() { return <ReturnForm />; }
