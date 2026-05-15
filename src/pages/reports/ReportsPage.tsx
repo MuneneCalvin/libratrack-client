@@ -17,12 +17,12 @@ export default function ReportsPage() {
   const { data: fineStats } = useQuery({ queryKey: QUERY_KEYS.reports.fines, queryFn: () => reportsService.getFines() });
   const { data: popular } = useQuery({ queryKey: QUERY_KEYS.reports.popularBooks, queryFn: () => reportsService.getPopularBooks(), enabled: user?.role === 'admin' });
 
-  const b = (borrowing?.data as { data?: { active: number; returned: number; overdue: number } })?.data;
-  const f = (fineStats?.data as { data?: { total: string; paid: string; unpaid: string } })?.data;
-  const cats = (inventory?.data as { data?: { categories?: { name: string; _count: { books: number } }[] } })?.data?.categories ?? [];
-  const popularBooks = (popular?.data as { data?: { bookId: number; _count: { bookId: number } }[] })?.data ?? [];
+  const b = borrowing?.data as { active: number; returned: number; overdue: number } | undefined;
+  const f = fineStats?.data as { total: string; paid: string; unpaid: string } | undefined;
+  const cats = (inventory?.data as { categories?: { name: string; count: number }[] } | undefined)?.categories ?? [];
+  const popularBooks = (popular?.data as { id: number; title: string; borrowCount: number }[] | undefined) ?? [];
 
-  const categoryChartData = cats.map((c) => ({ name: c.name, value: c._count.books }));
+  const categoryChartData = cats.map((c) => ({ name: c.name, value: c.count }));
   const borrowingChartData = b ? [
     { name: 'Active', value: b.active },
     { name: 'Returned', value: b.returned },
@@ -69,7 +69,7 @@ export default function ReportsPage() {
         <Card>
           <CardHeader><CardTitle className="text-base">Most Borrowed Books</CardTitle></CardHeader>
           <CardContent>
-            <ReportChart type="bar" data={popularBooks.map((p) => ({ name: `Book #${p.bookId}`, value: p._count.bookId }))} />
+            <ReportChart type="bar" data={popularBooks.map((p) => ({ name: p.title, value: p.borrowCount }))} />
           </CardContent>
         </Card>
       )}

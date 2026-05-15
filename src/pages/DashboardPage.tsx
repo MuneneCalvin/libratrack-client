@@ -26,13 +26,8 @@ const quickActions = [
 export default function DashboardPage() {
   const navigate = useNavigate();
   const { user } = useAuthStore();
-  const { data: borrowing } = useQuery({ queryKey: QUERY_KEYS.reports.borrowing, queryFn: () => reportsService.getBorrowing() });
-  const { data: inventory } = useQuery({ queryKey: QUERY_KEYS.reports.inventory, queryFn: () => reportsService.getInventory() });
-  const { data: members } = useQuery({ queryKey: QUERY_KEYS.reports.members, queryFn: () => reportsService.getMembers() });
-
-  const b = (borrowing?.data as { data?: { active: number; overdue: number } })?.data;
-  const inv = (inventory?.data as { data?: { total?: { _sum?: { totalCopies?: number } } } })?.data;
-  const mem = (members?.data as { data?: { total?: number } })?.data;
+  const { data: summary } = useQuery({ queryKey: QUERY_KEYS.reports.summary, queryFn: () => reportsService.getSummary() });
+  const s = summary?.data;
 
   const firstName = user?.email?.split('@')[0] ?? 'there';
 
@@ -48,10 +43,10 @@ export default function DashboardPage() {
 
       {/* Stat cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatsCard title="Active Borrows" value={b?.active ?? '—'} icon={ArrowLeftRight} variant="default" />
-        <StatsCard title="Overdue" value={b?.overdue ?? '—'} icon={AlertCircle} variant="danger" />
-        <StatsCard title="Total Books" value={inv?.total?._sum?.totalCopies ?? '—'} icon={BookOpen} variant="success" />
-        <StatsCard title="Members" value={mem?.total ?? '—'} icon={Users} variant="default" />
+        <StatsCard title="Active Borrows" value={s?.activeBorrows ?? '—'} icon={ArrowLeftRight} variant="default" />
+        <StatsCard title="Overdue" value={s?.overdueCount ?? '—'} icon={AlertCircle} variant="danger" />
+        <StatsCard title="Total Books" value={s?.totalBooks ?? '—'} icon={BookOpen} variant="success" />
+        <StatsCard title="Members" value={s?.totalMembers ?? '—'} icon={Users} variant="default" />
       </div>
 
       {/* Quick Actions */}

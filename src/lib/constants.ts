@@ -11,6 +11,7 @@ export const QUERY_KEYS = {
   memberFines: (id: number) => ['fines', 'member', id] as const,
   notifications: ['notifications'] as const,
   reports: {
+    summary: ['reports', 'summary'] as const,
     inventory: ['reports', 'inventory'] as const,
     borrowing: ['reports', 'borrowing'] as const,
     overdue: ['reports', 'overdue'] as const,
