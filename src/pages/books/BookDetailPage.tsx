@@ -53,7 +53,7 @@ export default function BookDetailPage() {
           </CardHeader>
           <CardContent className="space-y-3 text-sm">
             <Row label="ISBN" value={book.isbn} />
-            <Row label="Category" value={<Badge variant="secondary">{book.category.name}</Badge>} />
+            <Row label="Category" value={<Badge variant="secondary">{book.categoryName}</Badge>} />
             <Row label="Publisher" value={book.publisher ?? '—'} />
             <Row label="Published Year" value={book.publishedYear ?? '—'} />
           </CardContent>

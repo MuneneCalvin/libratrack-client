@@ -14,7 +14,11 @@ export function useSocket() {
   useEffect(() => {
     if (!accessToken || !user) return;
 
-    const socket = io(import.meta.env.VITE_SOCKET_URL, { auth: { token: accessToken } });
+    const socket = io(import.meta.env.VITE_SOCKET_URL, {
+      auth: { token: accessToken },
+      reconnection: false,
+    });
+    socket.on('connect_error', () => { /* server does not support socket.io */ });
     socketRef.current = socket;
 
     socket.on('notification:new', (notification) => {

@@ -31,7 +31,7 @@ export default function BooksPage() {
     { key: 'title', header: 'Title', render: (b: Book) => <span className="font-medium">{b.title}</span> },
     { key: 'author', header: 'Author', render: (b: Book) => b.author },
     { key: 'isbn', header: 'ISBN', render: (b: Book) => <span className="text-text-secondary text-sm">{b.isbn}</span> },
-    { key: 'category', header: 'Category', render: (b: Book) => <Badge variant="secondary">{b.category.name}</Badge> },
+    { key: 'category', header: 'Category', render: (b: Book) => <Badge variant="secondary">{b.categoryName}</Badge> },
     { key: 'copies', header: 'Available', render: (b: Book) => (
       <span className={b.availableCopies === 0 ? 'text-danger' : 'text-success'}>
         {b.availableCopies}/{b.totalCopies}
