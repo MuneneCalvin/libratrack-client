@@ -7,7 +7,7 @@ import DataTable from '@/components/DataTable';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Pencil, Trash2 } from 'lucide-react';
+import { Plus, Eye, Pencil, Trash2 } from 'lucide-react';
 import { useAuthStore } from '@/store/auth.store';
 
 export default function BooksPage() {
@@ -39,7 +39,10 @@ export default function BooksPage() {
     )},
     { key: 'actions', header: '', render: (b: Book) => (
       <div className="flex gap-2 justify-end">
-        <Button variant="ghost" size="icon" onClick={() => navigate(`/books/${b.id}/edit`)}>
+        <Button variant="ghost" size="icon" aria-label="View book" onClick={() => navigate(`/books/${b.id}`)}>
+          <Eye size={15} />
+        </Button>
+        <Button variant="ghost" size="icon" aria-label="Edit book" onClick={() => navigate(`/books/${b.id}/edit`)}>
           <Pencil size={15} />
         </Button>
         {user?.role === 'admin' && (
