@@ -53,6 +53,7 @@ export default function DashboardLayout() {
               size="icon-sm"
               className="text-white/60 hover:text-white hover:bg-white/10"
               onClick={() => setSidebarOpen(false)}
+              aria-label="Close sidebar"
             >
               <Menu size={16} />
             </Button>
@@ -90,6 +91,7 @@ export default function DashboardLayout() {
               'w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors text-white/50 hover:text-red-400 hover:bg-white/8',
               !sidebarOpen && 'justify-center'
             )}
+            aria-label="Sign out"
           >
             <LogOut size={18} className="shrink-0" />
             {sidebarOpen && 'Sign Out'}
@@ -105,11 +107,12 @@ export default function DashboardLayout() {
             variant="ghost"
             size="icon"
             onClick={() => setSidebarOpen(!sidebarOpen)}
+            aria-label="Toggle sidebar"
           >
             <Menu size={20} />
           </Button>
           <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" onClick={toggleDarkMode}>
+            <Button variant="ghost" size="icon" onClick={toggleDarkMode} aria-label="Toggle dark mode">
               {darkMode ? <Sun size={18} /> : <Moon size={18} />}
             </Button>
             <NotificationBell />
