@@ -28,6 +28,6 @@ describe('DataTable', () => {
 
   it('shows loading skeletons when isLoading', () => {
     const { container } = render(<DataTable columns={columns} data={[]} isLoading />);
-    expect(container.querySelectorAll('[data-slot="skeleton"]')).toHaveLength(5);
+    expect(container.querySelectorAll('[data-slot="skeleton"]')).toHaveLength(6);
   });
 });
