@@ -8,7 +8,8 @@ import AppRoutes from '@/routes';
 export default function App() {
   const { darkMode } = useUIStore();
   const { user, accessToken, setToken, clearAuth } = useAuthStore();
-  const [bootstrapped, setBootstrapped] = useState(false);
+  // Start bootstrapped if no refresh is needed; set to true after async refresh completes
+  const [bootstrapped, setBootstrapped] = useState(() => !(user && !accessToken));
   useSocket();
 
   useEffect(() => {
@@ -22,8 +23,6 @@ export default function App() {
         .then(({ data }) => setToken(data.data.accessToken))
         .catch(() => clearAuth())
         .finally(() => setBootstrapped(true));
-    } else {
-      setBootstrapped(true);
     }
   }, []);  // eslint-disable-line react-hooks/exhaustive-deps
 

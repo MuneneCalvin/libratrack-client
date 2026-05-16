@@ -37,6 +37,7 @@ export default function SettingsPage() {
   useEffect(() => {
     const settings = (data?.data as { data?: Record<string, string> })?.data;
     if (settings && typeof settings === 'object' && !Array.isArray(settings)) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setValues(settings);
     }
   }, [data]);

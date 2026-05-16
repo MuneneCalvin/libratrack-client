@@ -5,7 +5,7 @@ import { transactionsService } from '@/services/transactions.service';
 import { QUERY_KEYS } from '@/lib/constants';
 import StatsCard from '@/components/StatsCard';
 import { useAuthStore } from '@/store/auth.store';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { BookOpen, Users, ArrowLeftRight, AlertCircle, DollarSign, CalendarCheck } from 'lucide-react';
 import { formatDate, formatCurrency } from '@/lib/utils';

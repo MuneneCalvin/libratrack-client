@@ -28,6 +28,7 @@ export default function BookEditPage() {
 
   useEffect(() => {
     const b = bookData?.data?.data;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (b) setForm({
       title: b.title, author: b.author, isbn: b.isbn,
       categoryId: String(b.categoryId), totalCopies: String(b.totalCopies),

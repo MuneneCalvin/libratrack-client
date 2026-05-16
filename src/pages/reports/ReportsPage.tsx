@@ -6,7 +6,7 @@ import StatsCard from '@/components/StatsCard';
 import ReportChart from '@/components/ReportChart';
 import ExportButton from '@/components/ExportButton';
 import { useAuthStore } from '@/store/auth.store';
-import { BookOpen, ArrowLeftRight, AlertCircle, DollarSign } from 'lucide-react';
+import { ArrowLeftRight, AlertCircle, DollarSign } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
 
 export default function ReportsPage() {
