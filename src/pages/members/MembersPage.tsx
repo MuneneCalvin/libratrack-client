@@ -10,10 +10,12 @@ import { Badge } from '@/components/ui/badge';
 import { Plus, Eye, Trash2 } from 'lucide-react';
 import { useAuthStore } from '@/store/auth.store';
 import { formatDate } from '@/lib/utils';
+import AddMemberModal from '@/components/modals/AddMemberModal';
 
 export default function MembersPage() {
   const [page, setPage] = useState(1);
   const [q, setQ] = useState('');
+  const [addOpen, setAddOpen] = useState(false);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { user } = useAuthStore();
@@ -31,10 +33,10 @@ export default function MembersPage() {
   const columns = [
     { key: 'name', header: 'Name', render: (m: Member) => <span className="font-medium">{m.fullName}</span> },
     { key: 'membership', header: 'Membership #', render: (m: Member) => <span className="text-text-secondary text-sm font-mono">{m.membershipNumber}</span> },
-    { key: 'email', header: 'Email', render: (m: Member) => m.user.email },
+    { key: 'email', header: 'Email', render: (m: Member) => m.email },
     { key: 'joined', header: 'Joined', render: (m: Member) => formatDate(m.joinedAt) },
     { key: 'status', header: 'Status', render: (m: Member) => (
-      <Badge variant={m.user.isActive ? 'default' : 'secondary'}>{m.user.isActive ? 'Active' : 'Inactive'}</Badge>
+      <Badge variant={m.isActive ? 'default' : 'secondary'}>{m.isActive ? 'Active' : 'Inactive'}</Badge>
     )},
     { key: 'actions', header: '', render: (m: Member) => (
       <div className="flex gap-2 justify-end">
@@ -49,10 +51,12 @@ export default function MembersPage() {
   ];
 
   return (
+    <>
+    <AddMemberModal open={addOpen} onClose={() => setAddOpen(false)} />
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-text-primary">Members</h1>
-        <Button onClick={() => navigate('/members/new')} className="gap-2"><Plus size={16} /> Add Member</Button>
+        <Button onClick={() => setAddOpen(true)} className="gap-2"><Plus size={16} /> Add Member</Button>
       </div>
       <Input placeholder="Search by name or membership number…" value={q} onChange={(e) => { setQ(e.target.value); setPage(1); }} className="max-w-sm" />
       <DataTable
@@ -64,5 +68,6 @@ export default function MembersPage() {
         onPageChange={setPage}
       />
     </div>
+    </>
   );
 }

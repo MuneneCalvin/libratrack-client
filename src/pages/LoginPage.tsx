@@ -3,6 +3,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { PasswordInput } from '@/components/ui/password-input';
 import { BookOpen } from 'lucide-react';
 
 export default function LoginPage() {
@@ -55,8 +56,8 @@ export default function LoginPage() {
           <div className="p-4 rounded-2xl bg-accent/10 border border-accent/20">
             <BookOpen size={48} className="text-accent" />
           </div>
-          <h1 className="text-4xl font-bold text-white tracking-tight">LibraTrack</h1>
-          <p className="text-white/50 text-lg">Smart Library Management</p>
+          <h1 className="text-4xl font-bold text-white tracking-tight">Book Tracking System</h1>
+          <p className="text-white/50 text-lg">Computerized Book Management</p>
         </div>
       </div>
 
@@ -65,7 +66,7 @@ export default function LoginPage() {
         {/* Mobile logo */}
         <div className="flex items-center gap-2 mb-8 lg:hidden">
           <BookOpen size={24} className="text-accent" />
-          <span className="text-xl font-bold text-text-primary">LibraTrack</span>
+          <span className="text-xl font-bold text-text-primary">Book Tracking System</span>
         </div>
 
         <div className="w-full max-w-sm">
@@ -88,9 +89,8 @@ export default function LoginPage() {
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="password">Password</Label>
-              <Input
+              <PasswordInput
                 id="password"
-                type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"

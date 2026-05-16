@@ -2,12 +2,13 @@ import { api } from './api';
 
 export interface Member {
   id: number;
+  email: string;
   fullName: string;
   phone?: string;
   address?: string;
   membershipNumber: string;
   joinedAt: string;
-  user: { email: string; isActive: boolean };
+  isActive: boolean;
 }
 
 export const membersService = {

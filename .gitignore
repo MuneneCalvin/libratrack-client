@@ -9,6 +9,7 @@ lerna-debug.log*
 
 node_modules/
 dist/
+docs/
 dist-ssr
 .env
 *.env.local
@@ -24,3 +25,9 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+/.superpowers
+/.claude
+/.playwright-mcp
+.mcp.json
+package-lock.json
+yarn.lock

@@ -22,7 +22,7 @@ export default function PortalFinesPage() {
   const fines = (data?.data as { data?: { id: number; amount: number; reason: string; isPaid: boolean; isWaived: boolean; createdAt: string }[] })?.data ?? [];
 
   return (
-    <div className="space-y-4 max-w-xl">
+    <div className="space-y-4">
       <h1 className="text-2xl font-bold text-text-primary">My Fines</h1>
       {fines.length === 0 && <p className="text-text-secondary">No fines on your account.</p>}
       {fines.map((f) => (

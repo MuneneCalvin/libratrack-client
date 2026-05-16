@@ -6,6 +6,7 @@ interface AuthUser {
   email: string;
   role: 'admin' | 'librarian' | 'member';
   memberId?: number;
+  mustChangePassword?: boolean;
 }
 
 interface AuthStore {
@@ -13,6 +14,7 @@ interface AuthStore {
   accessToken: string | null;
   setAuth: (user: AuthUser, token: string) => void;
   setToken: (token: string) => void;
+  patchUser: (patch: Partial<AuthUser>) => void;
   clearAuth: () => void;
 }
 
@@ -23,6 +25,7 @@ export const useAuthStore = create<AuthStore>()(
       accessToken: null,
       setAuth: (user, accessToken) => set({ user, accessToken }),
       setToken: (accessToken) => set({ accessToken }),
+      patchUser: (patch) => set((s) => ({ user: s.user ? { ...s.user, ...patch } : s.user })),
       clearAuth: () => set({ user: null, accessToken: null }),
     }),
     {

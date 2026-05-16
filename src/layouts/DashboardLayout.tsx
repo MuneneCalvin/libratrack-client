@@ -1,13 +1,18 @@
-import { Outlet, NavLink } from 'react-router-dom';
+import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useUIStore } from '@/store/ui.store';
 import { useAuthStore } from '@/store/auth.store';
 import NotificationBell from '@/components/NotificationBell';
 import { Button } from '@/components/ui/button';
+import ChangePasswordModal from '@/components/modals/ChangePasswordModal';
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem,
+  DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
 import {
   LayoutDashboard, BookOpen, Users, ArrowLeftRight,
-  CalendarCheck, AlertCircle, BarChart2, Bell, Settings, Menu, Moon, Sun, LogOut,
+  CalendarCheck, AlertCircle, BarChart2, Bell, Settings, Menu, Moon, Sun, LogOut, User,
 } from 'lucide-react';
 
 const navItems = [
@@ -26,37 +31,32 @@ export default function DashboardLayout() {
   const { logout } = useAuth();
   const { user } = useAuthStore();
   const { sidebarOpen, setSidebarOpen, darkMode, toggleDarkMode } = useUIStore();
+  const navigate = useNavigate();
 
   const initials = user?.email
     ? user.email.slice(0, 2).toUpperCase()
     : 'LT';
+  const displayName = user?.email?.split('@')[0] ?? 'User';
+  const roleLabel = user?.role === 'admin' ? 'Administrator' : user?.role === 'librarian' ? 'Librarian' : 'Staff';
 
   return (
+    <>
+    {user?.mustChangePassword && <ChangePasswordModal open />}
     <div className="flex h-screen bg-background overflow-hidden">
-      {/* Sidebar — always deep navy */}
+      {/* Sidebar */}
       <aside className={cn(
         'bg-sidebar-bg flex flex-col transition-all duration-200 flex-shrink-0',
         sidebarOpen ? 'w-56' : 'w-16'
       )}>
-        {/* Brand + toggle */}
-        <div className="h-16 flex items-center justify-between px-4 border-b border-white/10">
-          {sidebarOpen && (
-            <div className="flex items-center gap-2">
-              <BookOpen size={20} className="text-accent" />
-              <span className="font-bold text-sidebar-fg text-lg tracking-tight">LibraTrack</span>
+        {/* Brand */}
+        <div className="h-16 flex items-center justify-center px-4 border-b border-white/10">
+          {sidebarOpen ? (
+            <div className="flex items-center gap-2 w-full">
+              <BookOpen size={20} className="text-accent shrink-0" />
+              <span className="font-bold text-sidebar-fg text-lg tracking-tight">Book Tracking System</span>
             </div>
-          )}
-          {!sidebarOpen && <BookOpen size={20} className="text-accent mx-auto" />}
-          {sidebarOpen && (
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              className="text-white/60 hover:text-white hover:bg-white/10"
-              onClick={() => setSidebarOpen(false)}
-              aria-label="Close sidebar"
-            >
-              <Menu size={16} />
-            </Button>
+          ) : (
+            <BookOpen size={20} className="text-accent" />
           )}
         </div>
 
@@ -83,7 +83,7 @@ export default function DashboardLayout() {
             ))}
         </nav>
 
-        {/* Logout */}
+        {/* Logout at bottom */}
         <div className="p-2 border-t border-white/10">
           <button
             onClick={logout}
@@ -116,15 +116,34 @@ export default function DashboardLayout() {
               {darkMode ? <Sun size={18} /> : <Moon size={18} />}
             </Button>
             <NotificationBell />
-            {/* User chip */}
-            <div className="flex items-center gap-2 pl-2 border-l border-border">
-              <div className="size-8 rounded-full bg-primary dark:bg-accent/20 flex items-center justify-center">
-                <span className="text-xs font-bold text-primary-foreground dark:text-accent">
-                  {initials}
-                </span>
-              </div>
-              <span className="text-sm text-text-secondary hidden sm:block">{user?.email}</span>
-            </div>
+            {/* Profile dropdown */}
+            <DropdownMenu>
+              <DropdownMenuTrigger className="flex items-center gap-2 pl-2 border-l border-border focus:outline-none" aria-label="Open profile menu">
+                <div className="size-8 rounded-full bg-primary dark:bg-accent/20 flex items-center justify-center ring-2 ring-transparent hover:ring-accent/40 transition-all">
+                  <span className="text-xs font-bold text-primary-foreground dark:text-accent">
+                    {initials}
+                  </span>
+                </div>
+                <span className="text-sm text-text-secondary hidden sm:block">{displayName}</span>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-52">
+                <DropdownMenuGroup>
+                  <DropdownMenuLabel>
+                    <p className="font-medium text-text-primary">{displayName}</p>
+                    <p className="text-xs text-text-secondary font-normal truncate">{user?.email}</p>
+                    <p className="text-xs text-accent font-normal mt-0.5">{roleLabel}</p>
+                  </DropdownMenuLabel>
+                </DropdownMenuGroup>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => navigate('/profile')}>
+                  <User size={14} className="mr-2" /> My Profile
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={logout} className="text-red-500 focus:text-red-500">
+                  <LogOut size={14} className="mr-2" /> Sign Out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </header>
 
@@ -133,5 +152,6 @@ export default function DashboardLayout() {
         </main>
       </div>
     </div>
+    </>
   );
 }

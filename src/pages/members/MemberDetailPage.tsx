@@ -29,7 +29,7 @@ export default function MemberDetailPage() {
   });
 
   const toggleActive = useMutation({
-    mutationFn: () => membersService.update(memberId, { isActive: !member?.user.isActive }),
+    mutationFn: () => membersService.update(memberId, { isActive: !member?.isActive }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: QUERY_KEYS.member(memberId) }),
   });
 
@@ -72,7 +72,7 @@ export default function MemberDetailPage() {
           onClick={() => toggleActive.mutate()}
           disabled={toggleActive.isPending}
         >
-          {member.user.isActive ? 'Deactivate' : 'Activate'}
+          {member.isActive ? 'Deactivate' : 'Activate'}
         </Button>
       </div>
 
@@ -82,14 +82,14 @@ export default function MemberDetailPage() {
           <CardHeader>
             <CardTitle className="text-base flex items-center justify-between">
               Member Information
-              <Badge variant={member.user.isActive ? 'default' : 'secondary'}>
-                {member.user.isActive ? 'Active' : 'Inactive'}
+              <Badge variant={member.isActive ? 'default' : 'secondary'}>
+                {member.isActive ? 'Active' : 'Inactive'}
               </Badge>
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-0 text-sm">
             {[
-              ['Email', member.user.email],
+              ['Email', member.email],
               ['Phone', member.phone ?? '—'],
               ['Address', member.address ?? '—'],
               ['Joined', formatDate(member.joinedAt)],

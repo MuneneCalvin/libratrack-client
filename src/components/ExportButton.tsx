@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { reportsService } from '@/services/reports.service';
-import { Button } from '@/components/ui/button';
+import { buttonVariants } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { cn } from '@/lib/utils';
 import { Download } from 'lucide-react';
 
 interface Props { report: string; }
@@ -26,10 +27,11 @@ export default function ExportButton({ report }: Props) {
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="outline" size="sm" className="gap-2" disabled={loading}>
-          <Download size={15} /> Export
-        </Button>
+      <DropdownMenuTrigger
+        className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'gap-2')}
+        disabled={loading}
+      >
+        <Download size={15} /> Export
       </DropdownMenuTrigger>
       <DropdownMenuContent>
         <DropdownMenuItem onClick={() => handleExport('csv')}>Export CSV</DropdownMenuItem>

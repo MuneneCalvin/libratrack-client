@@ -36,7 +36,7 @@ export default function FinesPage() {
   });
 
   const columns = [
-    { key: 'member', header: 'Member', render: (f: { member: { fullName: string } }) => f.member.fullName },
+    { key: 'member', header: 'Member', render: (f: { memberName: string }) => f.memberName },
     { key: 'amount', header: 'Amount', render: (f: { amount: number }) => <span className="font-medium text-danger">{formatCurrency(Number(f.amount))}</span> },
     { key: 'reason', header: 'Reason', render: (f: { reason: string }) => f.reason },
     { key: 'created', header: 'Date', render: (f: { createdAt: string }) => formatDate(f.createdAt) },

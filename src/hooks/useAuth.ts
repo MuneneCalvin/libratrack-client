@@ -12,7 +12,7 @@ export function useAuth() {
     const meRes = await authService.me();
     const me = meRes.data.data;
     setAuth(
-      { id: me.id, email: me.email, role: me.role as 'admin' | 'librarian' | 'member', memberId: me.memberId },
+      { id: me.id, email: me.email, role: me.role as 'admin' | 'librarian' | 'member', memberId: me.memberId, mustChangePassword: me.mustChangePassword },
       token,
     );
     navigate(me.role === 'member' ? '/portal/dashboard' : '/dashboard');

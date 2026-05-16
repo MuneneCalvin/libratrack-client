@@ -1,73 +1,174 @@
-# React + TypeScript + Vite
+# Book Tracking System — Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A full-featured, browser-based interface for the Book Tracking System. Built with React 19 and TypeScript, it provides role-scoped dashboards for administrators, librarians, and library members.
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Technology Stack
 
-## React Compiler
+| Layer | Technology |
+|---|---|
+| Framework | React 19 + TypeScript |
+| Build tool | Vite 8 |
+| Styling | Tailwind CSS v4 |
+| UI primitives | @base-ui/react |
+| Data fetching | @tanstack/react-query v5 |
+| Global state | Zustand v5 |
+| HTTP client | Axios |
+| Routing | React Router DOM v7 |
+| Charts | Recharts |
+| Icons | Lucide React |
+| Testing | Vitest + React Testing Library |
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+---
 
-## Expanding the ESLint configuration
+## Prerequisites
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+- Node.js 20 or later
+- npm 10 or later
+- The backend server running (see `../libratrack-new-server/README.md`)
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+---
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+## Getting Started
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+### 1. Install dependencies
+
+```bash
+npm install
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+### 2. Configure environment
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+Copy the example environment file and update it to point at your running backend:
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+cp .env.example .env.local
 ```
+
+Edit `.env.local`:
+
+```env
+VITE_API_URL=http://localhost:8000/api
+VITE_SOCKET_URL=http://localhost:8000
+```
+
+### 3. Start the development server
+
+```bash
+npm run dev
+```
+
+The app will be available at `http://localhost:5173`.
+
+---
+
+## Available Scripts
+
+| Command | Description |
+|---|---|
+| `npm run dev` | Start development server with hot reload |
+| `npm run build` | Type-check and compile production bundle to `dist/` |
+| `npm run preview` | Serve the production build locally |
+| `npm run typecheck` | Run TypeScript compiler without emitting files |
+| `npm run lint` | Lint source and test files with ESLint |
+| `npm test` | Run unit tests with Vitest |
+| `npm run coverage` | Run tests and generate a coverage report |
+
+---
+
+## Project Structure
+
+```
+src/
+├── components/
+│   ├── modals/          # AddMemberModal, BorrowModal, ReturnModal,
+│   │                    #   ChangePasswordModal
+│   └── ui/              # Reusable primitives (Button, Input, Dialog, …)
+├── hooks/               # useAuth
+├── layouts/
+│   ├── DashboardLayout  # Admin / librarian shell (collapsible sidebar)
+│   └── PortalLayout     # Member portal shell
+├── lib/                 # Utility functions, route constants
+├── pages/
+│   ├── portal/          # Member-facing pages
+│   ├── books/           # Book catalogue management
+│   ├── members/         # Member management
+│   ├── transactions/    # Borrow / return records
+│   ├── reservations/    # Reservation management (card view)
+│   ├── fines/           # Fine tracking (KES)
+│   ├── reports/         # Statistics and charts
+│   ├── settings/        # Library configuration
+│   ├── profile/         # Staff profile page
+│   └── notifications/   # In-app notifications
+├── routes/              # Route definitions and role guards
+├── services/            # API service modules (one per resource)
+└── store/               # Zustand stores: auth.store, ui.store
+```
+
+---
+
+## User Roles
+
+| Role | Access |
+|---|---|
+| **Admin** | Full access — all pages, Settings, member deletion |
+| **Librarian** | Books, Members (view/add), Transactions, Reservations, Fines, Reports |
+| **Member** | Member Portal — dashboard, browse books, reservations, fines, notifications |
+
+---
+
+## Authentication Flow
+
+1. User submits email and password on the Login page.
+2. The server returns a short-lived JWT access token (15 min) and sets an HttpOnly `refreshToken` cookie.
+3. The access token is stored in Zustand memory; the user profile is persisted to `localStorage` (`libratrack-auth`) so it survives page refresh.
+4. An Axios request interceptor silently calls `POST /api/auth/refresh` when a 401 response is received, then retries the original request.
+5. New members created by an administrator are flagged `mustChangePassword = true`. A blocking modal forces a password change before any content is accessible.
+
+---
+
+## API Response Format
+
+Every response from the backend is wrapped in a consistent envelope:
+
+```json
+// Single object
+{ "status": "success", "data": { ... } }
+
+// List with pagination
+{ "status": "success", "data": [...], "meta": { "total": 42, "page": 1, "limit": 10, "totalPages": 5 } }
+
+// Error
+{ "status": "error", "message": "Human-readable description" }
+```
+
+When reading data inside components, access the inner payload with:
+
+```ts
+const item  = (response?.data as { data?: T })?.data;
+const items = (response?.data as { data?: T[] })?.data ?? [];
+```
+
+---
+
+## Building for Production
+
+```bash
+npm run build
+```
+
+The compiled output lands in `dist/` as a static site. Serve it with any web server (nginx, Caddy, etc.) and proxy `/api` requests to the Django backend.
+
+An `nginx.conf` and `Dockerfile` are included at the repository root for containerised deployments.
+
+---
+
+## Running Tests
+
+```bash
+npm test            # run all unit tests
+npm run coverage    # run tests with coverage report
+```
+
+Tests live under `tests/` and use `jsdom` as the simulated DOM, with `msw` for HTTP mocking.

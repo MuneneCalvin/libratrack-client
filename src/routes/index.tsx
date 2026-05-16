@@ -23,6 +23,9 @@ import PortalDashboardPage from '@/pages/portal/PortalDashboardPage';
 import PortalReservationsPage from '@/pages/portal/PortalReservationsPage';
 import PortalFinesPage from '@/pages/portal/PortalFinesPage';
 import PortalNotificationsPage from '@/pages/portal/PortalNotificationsPage';
+import ProfilePage from '@/pages/profile/ProfilePage';
+import PortalProfilePage from '@/pages/portal/PortalProfilePage';
+import PortalBooksPage from '@/pages/portal/PortalBooksPage';
 
 export default function AppRoutes() {
   return (
@@ -46,6 +49,7 @@ export default function AppRoutes() {
         <Route path="reports" element={<ReportsPage />} />
         <Route path="notifications" element={<NotificationsPage />} />
         <Route path="settings" element={<ProtectedRoute roles={['admin']}><SettingsPage /></ProtectedRoute>} />
+        <Route path="profile" element={<ProfilePage />} />
       </Route>
       <Route path="/portal" element={<ProtectedRoute roles={['member']}><PortalLayout /></ProtectedRoute>}>
         <Route index element={<Navigate to="/portal/dashboard" replace />} />
@@ -53,6 +57,8 @@ export default function AppRoutes() {
         <Route path="reservations" element={<PortalReservationsPage />} />
         <Route path="fines" element={<PortalFinesPage />} />
         <Route path="notifications" element={<PortalNotificationsPage />} />
+        <Route path="profile" element={<PortalProfilePage />} />
+        <Route path="books" element={<PortalBooksPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/login" replace />} />
     </Routes>

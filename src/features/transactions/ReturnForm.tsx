@@ -28,7 +28,7 @@ export default function ReturnForm() {
   const activeTransactions = [
     ...((data?.data as { data?: unknown[] })?.data ?? []),
     ...((overdueData.data?.data as { data?: unknown[] })?.data ?? []),
-  ] as { id: number; member: { fullName: string }; dueDate: string; status: string; items: { book: { title: string } }[] }[];
+  ] as { id: number; memberName: string; dueDate: string; status: string; items: { book: { title: string } }[] }[];
 
   const mutation = useMutation({
     mutationFn: () => transactionsService.return(Number(transactionId)),
@@ -55,7 +55,7 @@ export default function ReturnForm() {
               <SelectContent>
                 {activeTransactions.map((t) => (
                   <SelectItem key={t.id} value={String(t.id)}>
-                    {t.member.fullName} — {t.items.map((i) => i.book.title).join(', ')} (due {formatDate(t.dueDate)})
+                    {t.memberName} — {t.items.map((i) => i.book.title).join(', ')} (due {formatDate(t.dueDate)})
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -64,7 +64,7 @@ export default function ReturnForm() {
 
           {selectedTx && (
             <div className="bg-background rounded-md p-3 text-sm space-y-1">
-              <p><span className="text-text-secondary">Member:</span> {selectedTx.member.fullName}</p>
+              <p><span className="text-text-secondary">Member:</span> {selectedTx.memberName}</p>
               <p><span className="text-text-secondary">Books:</span> {selectedTx.items.map((i) => i.book.title).join(', ')}</p>
               <p><span className="text-text-secondary">Due:</span> {formatDate(selectedTx.dueDate)}</p>
               {selectedTx.status === 'OVERDUE' && <p className="text-danger font-medium">Overdue — a fine will be calculated on return.</p>}
