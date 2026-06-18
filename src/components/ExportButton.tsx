@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { reportsService } from '@/services/reports.service';
 import { buttonVariants } from '@/components/ui/button';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
 import { Download } from 'lucide-react';
 
@@ -10,14 +9,14 @@ interface Props { report: string; }
 export default function ExportButton({ report }: Props) {
   const [loading, setLoading] = useState(false);
 
-  async function handleExport(type: 'csv' | 'pdf') {
+  async function handleExport() {
     setLoading(true);
     try {
-      const res = await reportsService.export(type, report);
+      const res = await reportsService.export('csv', report);
       const url = window.URL.createObjectURL(new Blob([res.data as BlobPart]));
       const a = document.createElement('a');
       a.href = url;
-      a.download = `${report}-${new Date().toISOString().slice(0, 10)}.${type}`;
+      a.download = `${report}-${new Date().toISOString().slice(0, 10)}.csv`;
       a.click();
       window.URL.revokeObjectURL(url);
     } finally {
@@ -26,17 +25,13 @@ export default function ExportButton({ report }: Props) {
   }
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger
-        className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'gap-2')}
-        disabled={loading}
-      >
-        <Download size={15} /> Export
-      </DropdownMenuTrigger>
-      <DropdownMenuContent>
-        <DropdownMenuItem onClick={() => handleExport('csv')}>Export CSV</DropdownMenuItem>
-        <DropdownMenuItem onClick={() => handleExport('pdf')}>Export PDF</DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+    <button
+      type="button"
+      className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'gap-2')}
+      onClick={handleExport}
+      disabled={loading}
+    >
+      <Download size={15} /> {loading ? 'Exporting...' : 'Export CSV'}
+    </button>
   );
 }

@@ -1,15 +1,17 @@
+import { useState } from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useUIStore } from '@/store/ui.store';
 import { useAuthStore } from '@/store/auth.store';
 import ChangePasswordModal from '@/components/modals/ChangePasswordModal';
 import { Button } from '@/components/ui/button';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem,
   DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
-import { LayoutDashboard, CalendarCheck, AlertCircle, Bell, Moon, Sun, LogOut, BookOpen, User } from 'lucide-react';
+import { LayoutDashboard, CalendarCheck, AlertCircle, Bell, Moon, Sun, LogOut, BookOpen, User, Menu } from 'lucide-react';
 
 const navItems = [
   { to: '/portal/dashboard', icon: LayoutDashboard, label: 'My Dashboard' },
@@ -23,20 +25,81 @@ export default function PortalLayout() {
   const { logout } = useAuth();
   const { user } = useAuthStore();
   const { darkMode, toggleDarkMode } = useUIStore();
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const navigate = useNavigate();
 
   const initials = user?.email ? user.email.slice(0, 2).toUpperCase() : 'LT';
   const displayName = user?.email?.split('@')[0] ?? 'Member';
 
+  const renderNavLinks = (onNavigate?: () => void) =>
+    navItems.map(({ to, icon: Icon, label }) => (
+      <NavLink
+        key={to}
+        to={to}
+        onClick={onNavigate}
+        className={({ isActive }) =>
+          cn(
+            'flex items-center gap-3 px-3 py-2.5 rounded-md text-sm transition-colors',
+            isActive
+              ? 'bg-accent/15 text-accent font-semibold border-l-2 border-accent -ml-px pl-[calc(0.75rem-1px)]'
+              : 'text-white/60 hover:text-white hover:bg-white/8'
+          )
+        }
+      >
+        <Icon size={18} className="shrink-0" />
+        {label}
+      </NavLink>
+    ));
+
+  const signOut = () => {
+    setMobileNavOpen(false);
+    logout();
+  };
+
   return (
     <>
     {user?.mustChangePassword && <ChangePasswordModal open />}
+    <Sheet open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
+      <SheetContent
+        side="left"
+        className="w-[18rem] max-w-[86vw] gap-0 border-white/10 bg-sidebar-bg p-0 text-sidebar-fg"
+      >
+        <SheetHeader className="h-16 justify-center border-b border-white/10 px-4 py-0">
+          <SheetTitle className="flex items-center gap-2 text-sidebar-fg">
+            <BookOpen size={20} className="text-accent" />
+            LibraTrack
+          </SheetTitle>
+        </SheetHeader>
+        <nav className="flex-1 space-y-0.5 overflow-y-auto px-2 py-4" aria-label="Member mobile navigation">
+          {renderNavLinks(() => setMobileNavOpen(false))}
+        </nav>
+        <div className="border-t border-white/10 p-2">
+          <button
+            onClick={signOut}
+            className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors text-white/50 hover:text-red-400 hover:bg-white/8"
+            aria-label="Sign out"
+          >
+            <LogOut size={18} className="shrink-0" />
+            Sign Out
+          </button>
+        </div>
+      </SheetContent>
+    </Sheet>
     <div className="min-h-screen bg-background flex flex-col">
       {/* Top header */}
-      <header className="bg-surface border-b border-accent/20 px-6 h-16 flex items-center justify-between shrink-0">
+      <header className="bg-surface border-b border-accent/20 px-4 sm:px-6 h-16 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="md:hidden -ml-2"
+            onClick={() => setMobileNavOpen(true)}
+            aria-label="Open member navigation"
+          >
+            <Menu size={20} />
+          </Button>
           <BookOpen size={20} className="text-accent" />
-          <span className="font-bold text-text-primary">Book Tracking System</span>
+          <span className="font-bold text-text-primary">LibraTrack</span>
         </div>
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="icon" onClick={toggleDarkMode} aria-label="Toggle dark mode">
@@ -73,25 +136,9 @@ export default function PortalLayout() {
 
       <div className="flex flex-1 min-h-0">
         {/* Sidebar */}
-        <aside className="w-52 bg-sidebar-bg shrink-0 py-4 px-2 flex flex-col">
-          <nav className="flex-1 space-y-0.5">
-            {navItems.map(({ to, icon: Icon, label }) => (
-              <NavLink
-                key={to}
-                to={to}
-                className={({ isActive }) =>
-                  cn(
-                    'flex items-center gap-3 px-3 py-2.5 rounded-md text-sm transition-colors',
-                    isActive
-                      ? 'bg-accent/15 text-accent font-semibold border-l-2 border-accent -ml-px pl-[calc(0.75rem-1px)]'
-                      : 'text-white/60 hover:text-white hover:bg-white/8'
-                  )
-                }
-              >
-                <Icon size={18} className="shrink-0" />
-                {label}
-              </NavLink>
-            ))}
+        <aside className="hidden md:flex w-52 bg-sidebar-bg shrink-0 py-4 px-2 flex-col">
+          <nav className="flex-1 space-y-0.5" aria-label="Member navigation">
+            {renderNavLinks()}
           </nav>
 
           {/* Logout at bottom of sidebar */}
@@ -107,7 +154,7 @@ export default function PortalLayout() {
           </div>
         </aside>
 
-        <main className="flex-1 p-6 overflow-y-auto">
+        <main className="flex-1 p-4 sm:p-6 overflow-y-auto min-w-0">
           <Outlet />
         </main>
       </div>

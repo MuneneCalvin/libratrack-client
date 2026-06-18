@@ -12,6 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { ArrowDownCircle, Search, X } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface Props {
   open: boolean;
@@ -35,7 +36,7 @@ export default function BorrowModal({ open, onClose }: Props) {
 
   const { data: booksData } = useQuery({
     queryKey: ['modal-books', bookSearch],
-    queryFn: () => booksService.getAll({ search: bookSearch, limit: 8 }),
+    queryFn: () => booksService.getAll({ q: bookSearch, available: 'true', limit: 8 }),
     enabled: bookSearch.length > 0,
   });
   const books = (booksData?.data as { data?: Book[] })?.data ?? [];
@@ -44,9 +45,16 @@ export default function BorrowModal({ open, onClose }: Props) {
     mutationFn: () => transactionsService.borrow(selectedMember!.id, selectedBooks.map((b) => b.id)),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.transactions });
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.books });
+      toast.success('Borrow recorded', {
+        description: `${selectedBooks.length} ${selectedBooks.length === 1 ? 'book' : 'books'} assigned to ${selectedMember?.fullName}.`,
+      });
       handleClose();
     },
-    onError: () => setError('Failed to record borrow. Please check availability and try again.'),
+    onError: () => {
+      setError('Failed to record borrow. Please check availability and try again.');
+      toast.error('Failed to record borrow');
+    },
   });
 
   function handleClose() {
@@ -189,7 +197,7 @@ export default function BorrowModal({ open, onClose }: Props) {
           <DialogFooter>
             <Button type="button" variant="outline" onClick={handleClose}>Cancel</Button>
             <Button type="submit" disabled={mutation.isPending || !selectedMember || selectedBooks.length === 0}>
-              {mutation.isPending ? 'Processing…' : `Borrow ${selectedBooks.length > 0 ? `(${selectedBooks.length})` : ''}`}
+              {mutation.isPending ? 'Processing...' : `Borrow ${selectedBooks.length > 0 ? `(${selectedBooks.length})` : ''}`}
             </Button>
           </DialogFooter>
         </form>

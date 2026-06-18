@@ -6,5 +6,5 @@ export const finesService = {
     api.get(`/members/${memberId}/fines/`, { params }),
   getById: (id: number) => api.get(`/fines/${id}/`),
   markPaid: (id: number) => api.patch(`/fines/${id}/pay/`),
-  waive: (id: number, note: string) => api.patch(`/fines/${id}/waive/`, { note }),
+  waive: (id: number, note: string) => api.patch(`/fines/${id}/waive/`, { waivedNote: note }),
 };

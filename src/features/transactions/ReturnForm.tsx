@@ -8,6 +8,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { formatDate } from '@/lib/utils';
+import { toast } from 'sonner';
 
 export default function ReturnForm() {
   const [transactionId, setTransactionId] = useState('');
@@ -36,9 +37,14 @@ export default function ReturnForm() {
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.transactions });
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.books });
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.fines });
+      toast.success('Return recorded');
       navigate('/transactions');
     },
-    onError: (e: { response?: { data?: { message?: string } } }) => setError(e.response?.data?.message ?? 'Failed to process return'),
+    onError: (e: { response?: { data?: { message?: string } } }) => {
+      const message = e.response?.data?.message ?? 'Failed to process return';
+      setError(message);
+      toast.error(message);
+    },
   });
 
   const selectedTx = activeTransactions.find((t) => t.id === Number(transactionId));
@@ -55,7 +61,7 @@ export default function ReturnForm() {
               <SelectContent>
                 {activeTransactions.map((t) => (
                   <SelectItem key={t.id} value={String(t.id)}>
-                    {t.memberName} — {t.items.map((i) => i.book.title).join(', ')} (due {formatDate(t.dueDate)})
+                    {t.memberName} - {t.items.map((i) => i.book.title).join(', ')} (due {formatDate(t.dueDate)})
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -75,7 +81,7 @@ export default function ReturnForm() {
 
           <div className="flex gap-3 pt-2">
             <Button onClick={() => mutation.mutate()} disabled={!transactionId || mutation.isPending}>
-              {mutation.isPending ? 'Processing…' : 'Confirm Return'}
+              {mutation.isPending ? 'Processing...' : 'Confirm Return'}
             </Button>
             <Button variant="outline" onClick={() => navigate('/transactions')}>Cancel</Button>
           </div>

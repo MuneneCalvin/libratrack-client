@@ -31,12 +31,14 @@ export default function ReportsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div>
         <h1 className="text-2xl font-bold text-text-primary">Reports</h1>
-        <ExportButton report="borrowing" />
+        <p className="text-text-secondary text-sm mt-1">
+          Review inventory, borrowing activity, and fine collection trends.
+        </p>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         <StatsCard title="Active Borrows" value={b?.active ?? '—'} icon={ArrowLeftRight} />
         <StatsCard title="Overdue" value={b?.overdue ?? '—'} icon={AlertCircle} variant="danger" />
         <StatsCard title="Total Fines" value={f?.total ? formatCurrency(Number(f.total)) : '—'} icon={DollarSign} variant="warning" />
@@ -45,8 +47,11 @@ export default function ReportsPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="text-base">Borrow Status</CardTitle>
+          <CardHeader className="flex flex-row items-center justify-between gap-3">
+            <div>
+              <CardTitle className="text-base">Borrow Status</CardTitle>
+              <p className="text-xs text-text-secondary mt-1">Active, returned, and overdue transactions.</p>
+            </div>
             <ExportButton report="borrowing" />
           </CardHeader>
           <CardContent>
@@ -55,8 +60,11 @@ export default function ReportsPage() {
         </Card>
 
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="text-base">Books by Category</CardTitle>
+          <CardHeader className="flex flex-row items-center justify-between gap-3">
+            <div>
+              <CardTitle className="text-base">Books by Category</CardTitle>
+              <p className="text-xs text-text-secondary mt-1">Inventory distribution across the collection.</p>
+            </div>
             <ExportButton report="inventory" />
           </CardHeader>
           <CardContent>
@@ -65,11 +73,14 @@ export default function ReportsPage() {
         </Card>
       </div>
 
-      {user?.role === 'admin' && popularBooks.length > 0 && (
+      {user?.role === 'admin' && (
         <Card>
-          <CardHeader><CardTitle className="text-base">Most Borrowed Books</CardTitle></CardHeader>
+          <CardHeader>
+            <CardTitle className="text-base">Most Borrowed Books</CardTitle>
+            <p className="text-xs text-text-secondary mt-1">Titles with the highest borrow count.</p>
+          </CardHeader>
           <CardContent>
-            <ReportChart type="bar" data={popularBooks.map((p) => ({ name: p.title, value: p.borrowCount }))} />
+            <ReportChart type="bar" height={320} data={popularBooks.map((p) => ({ name: p.title, value: p.borrowCount }))} />
           </CardContent>
         </Card>
       )}

@@ -4,6 +4,7 @@ import { useAuthStore } from '@/store/auth.store';
 import { booksService, type Book } from '@/services/books.service';
 import { reservationsService } from '@/services/reservations.service';
 import { QUERY_KEYS } from '@/lib/constants';
+import { getBookCoverStyle } from '@/lib/bookCover';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -12,6 +13,31 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from '@/components/ui/dialog';
 import { Search, BookOpen, CalendarCheck, Hash, Building2, Calendar } from 'lucide-react';
+import { toast } from 'sonner';
+
+function BookCover({ book, compact = false }: { book: Book; compact?: boolean }) {
+  const cover = getBookCoverStyle(book.categoryName);
+
+  if (book.coverUrl) {
+    return (
+      <div className={compact ? 'h-24 overflow-hidden rounded-lg' : 'h-36 overflow-hidden'}>
+        <img src={book.coverUrl} alt="" className="h-full w-full object-cover" />
+      </div>
+    );
+  }
+
+  return (
+    <div className={`${compact ? 'h-24 rounded-lg' : 'h-36'} ${cover.className} relative overflow-hidden shrink-0 p-4 text-white`}>
+      <div className="absolute inset-x-0 top-0 h-1 bg-white/30" />
+      <div className="absolute -right-6 -top-8 size-24 rounded-full border border-white/20" />
+      <div className="absolute bottom-3 left-4 right-4">
+        <p className="text-[0.65rem] font-bold tracking-[0.16em] text-white/70">{cover.label}</p>
+        <p className="mt-1 line-clamp-2 text-sm font-semibold leading-tight">{book.title}</p>
+      </div>
+      <BookOpen size={compact ? 28 : 34} className="absolute right-4 bottom-4 text-white/25" />
+    </div>
+  );
+}
 
 export default function PortalBooksPage() {
   const { user } = useAuthStore();
@@ -30,9 +56,14 @@ export default function PortalBooksPage() {
     mutationFn: (bookId: number) => reservationsService.create(memberId, bookId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.memberReservations(memberId) });
+      toast.success('Reservation created', {
+        description: confirmBook ? `${confirmBook.title} has been added to your reservations.` : undefined,
+      });
       setConfirmBook(null);
     },
-    onError: () => {},
+    onError: () => {
+      toast.error('Failed to reserve book');
+    },
   });
 
   const books = (data?.data as { data?: Book[] })?.data ?? [];
@@ -55,10 +86,7 @@ export default function PortalBooksPage() {
 
           {confirmBook && (
             <div className="space-y-4 py-2">
-              {/* Book cover placeholder */}
-              <div className="h-24 rounded-lg bg-gradient-to-br from-sidebar-bg/80 to-sidebar-bg flex items-center justify-center">
-                <BookOpen size={36} className="text-accent/50" />
-              </div>
+              <BookCover book={confirmBook} compact />
 
               <div className="space-y-2 text-sm">
                 <h3 className="font-semibold text-text-primary text-base leading-snug">{confirmBook.title}</h3>
@@ -89,7 +117,7 @@ export default function PortalBooksPage() {
                   className="gap-1.5"
                 >
                   <CalendarCheck size={14} />
-                  {reserveMutation.isPending ? 'Reserving…' : 'Confirm Reserve'}
+                  {reserveMutation.isPending ? 'Reserving...' : 'Confirm Reservation'}
                 </Button>
               </DialogFooter>
             </div>
@@ -123,10 +151,7 @@ export default function PortalBooksPage() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
         {books.map((book) => (
           <Card key={book.id} className="flex flex-col overflow-hidden hover:border-accent/40 transition-colors">
-            {/* Cover placeholder */}
-            <div className="h-36 bg-gradient-to-br from-sidebar-bg/80 to-sidebar-bg flex items-center justify-center shrink-0">
-              <BookOpen size={40} className="text-accent/50" />
-            </div>
+            <BookCover book={book} />
             <CardContent className="flex flex-col flex-1 p-4 gap-2">
               <div className="flex-1">
                 <p className="font-semibold text-text-primary text-sm leading-snug line-clamp-2">{book.title}</p>

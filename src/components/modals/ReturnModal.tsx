@@ -12,6 +12,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { ArrowUpCircle, Search, X } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
+import { toast } from 'sonner';
 
 interface Transaction {
   id: number;
@@ -52,9 +53,15 @@ export default function ReturnModal({ open, onClose }: Props) {
     mutationFn: () => transactionsService.return(selectedTxn!.id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.transactions });
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.books });
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.fines });
+      toast.success('Return recorded');
       handleClose();
     },
-    onError: () => setError('Failed to process return. Please try again.'),
+    onError: () => {
+      setError('Failed to process return. Please try again.');
+      toast.error('Failed to process return');
+    },
   });
 
   function handleClose() {
@@ -171,7 +178,7 @@ export default function ReturnModal({ open, onClose }: Props) {
           <DialogFooter>
             <Button type="button" variant="outline" onClick={handleClose}>Cancel</Button>
             <Button type="submit" disabled={mutation.isPending || !selectedTxn}>
-              {mutation.isPending ? 'Processing…' : 'Confirm Return'}
+              {mutation.isPending ? 'Processing...' : 'Confirm Return'}
             </Button>
           </DialogFooter>
         </form>

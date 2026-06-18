@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Settings2, Clock, BookOpen, Users, CalendarDays } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface Setting {
   key: string;
@@ -31,7 +32,7 @@ export default function SettingsPage() {
 
   const { data, isLoading } = useQuery({
     queryKey: QUERY_KEYS.settings,
-    queryFn: () => api.get('/settings'),
+    queryFn: () => api.get('/settings/'),
   });
 
   useEffect(() => {
@@ -43,11 +44,15 @@ export default function SettingsPage() {
   }, [data]);
 
   const mutation = useMutation({
-    mutationFn: () => api.patch('/settings', values),
+    mutationFn: () => api.put('/settings/', values),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.settings });
       setSaved(true);
+      toast.success('Settings saved');
       setTimeout(() => setSaved(false), 2500);
+    },
+    onError: () => {
+      toast.error('Failed to save settings');
     },
   });
 
@@ -92,7 +97,7 @@ export default function SettingsPage() {
 
           <div className="flex items-center gap-3 mt-8 pt-6 border-t border-border">
             <Button onClick={() => mutation.mutate()} disabled={mutation.isPending}>
-              {mutation.isPending ? 'Saving…' : saved ? '✓ Saved' : 'Save Settings'}
+              {mutation.isPending ? 'Saving...' : saved ? 'Saved' : 'Save Settings'}
             </Button>
             {saved && <span className="text-sm text-green-600">Settings updated successfully.</span>}
           </div>

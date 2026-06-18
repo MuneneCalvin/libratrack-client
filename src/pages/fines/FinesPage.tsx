@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { formatDate, formatCurrency } from '@/lib/utils';
 import { useAuthStore } from '@/store/auth.store';
+import { toast } from 'sonner';
 
 export default function FinesPage() {
   const [page, setPage] = useState(1);
@@ -27,12 +28,26 @@ export default function FinesPage() {
 
   const payMutation = useMutation({
     mutationFn: finesService.markPaid,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: QUERY_KEYS.fines }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.fines });
+      toast.success('Fine marked as paid');
+    },
+    onError: () => {
+      toast.error('Failed to mark fine as paid');
+    },
   });
 
   const waiveMutation = useMutation({
     mutationFn: ({ id, note }: { id: number; note: string }) => finesService.waive(id, note),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: QUERY_KEYS.fines }); setWaiveId(null); setWaiveNote(''); },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.fines });
+      setWaiveId(null);
+      setWaiveNote('');
+      toast.success('Fine waived');
+    },
+    onError: () => {
+      toast.error('Failed to waive fine');
+    },
   });
 
   const columns = [

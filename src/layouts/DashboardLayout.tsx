@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useUIStore } from '@/store/ui.store';
@@ -5,6 +6,7 @@ import { useAuthStore } from '@/store/auth.store';
 import NotificationBell from '@/components/NotificationBell';
 import { Button } from '@/components/ui/button';
 import ChangePasswordModal from '@/components/modals/ChangePasswordModal';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem,
   DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
@@ -31,6 +33,7 @@ export default function DashboardLayout() {
   const { logout } = useAuth();
   const { user } = useAuthStore();
   const { sidebarOpen, setSidebarOpen, darkMode, toggleDarkMode } = useUIStore();
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const navigate = useNavigate();
 
   const initials = user?.email
@@ -38,14 +41,67 @@ export default function DashboardLayout() {
     : 'LT';
   const displayName = user?.email?.split('@')[0] ?? 'User';
   const roleLabel = user?.role === 'admin' ? 'Administrator' : user?.role === 'librarian' ? 'Librarian' : 'Staff';
+  const visibleNavItems = navItems.filter((item) => !item.adminOnly || user?.role === 'admin');
+
+  const renderNavLinks = (showLabels: boolean, onNavigate?: () => void) =>
+    visibleNavItems.map(({ to, icon: Icon, label }) => (
+      <NavLink
+        key={to}
+        to={to}
+        onClick={onNavigate}
+        className={({ isActive }) =>
+          cn(
+            'flex items-center gap-3 px-3 py-2.5 rounded-md text-sm transition-colors',
+            !showLabels && 'justify-center',
+            isActive
+              ? 'bg-accent/15 text-accent font-semibold border-l-2 border-accent -ml-px pl-[calc(0.75rem-1px)]'
+              : 'text-white/60 hover:text-white hover:bg-white/8'
+          )
+        }
+      >
+        <Icon size={18} className="shrink-0" />
+        {showLabels && <span>{label}</span>}
+      </NavLink>
+    ));
+
+  const signOut = () => {
+    setMobileNavOpen(false);
+    logout();
+  };
 
   return (
     <>
     {user?.mustChangePassword && <ChangePasswordModal open />}
+    <Sheet open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
+      <SheetContent
+        side="left"
+        className="w-[18rem] max-w-[86vw] gap-0 border-white/10 bg-sidebar-bg p-0 text-sidebar-fg"
+      >
+        <SheetHeader className="h-16 justify-center border-b border-white/10 px-4 py-0">
+          <SheetTitle className="flex items-center gap-2 text-sidebar-fg">
+            <BookOpen size={20} className="text-accent" />
+            LibraTrack
+          </SheetTitle>
+        </SheetHeader>
+        <nav className="flex-1 space-y-0.5 overflow-y-auto px-2 py-4" aria-label="Staff mobile navigation">
+          {renderNavLinks(true, () => setMobileNavOpen(false))}
+        </nav>
+        <div className="border-t border-white/10 p-2">
+          <button
+            onClick={signOut}
+            className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors text-white/50 hover:text-red-400 hover:bg-white/8"
+            aria-label="Sign out"
+          >
+            <LogOut size={18} className="shrink-0" />
+            Sign Out
+          </button>
+        </div>
+      </SheetContent>
+    </Sheet>
     <div className="flex h-screen bg-background overflow-hidden">
       {/* Sidebar */}
       <aside className={cn(
-        'bg-sidebar-bg flex flex-col transition-all duration-200 flex-shrink-0',
+        'hidden md:flex bg-sidebar-bg flex-col transition-all duration-200 flex-shrink-0',
         sidebarOpen ? 'w-56' : 'w-16'
       )}>
         {/* Brand */}
@@ -53,7 +109,7 @@ export default function DashboardLayout() {
           {sidebarOpen ? (
             <div className="flex items-center gap-2 w-full">
               <BookOpen size={20} className="text-accent shrink-0" />
-              <span className="font-bold text-sidebar-fg text-lg tracking-tight">Book Tracking System</span>
+              <span className="font-bold text-sidebar-fg text-lg tracking-tight">LibraTrack</span>
             </div>
           ) : (
             <BookOpen size={20} className="text-accent" />
@@ -61,26 +117,8 @@ export default function DashboardLayout() {
         </div>
 
         {/* Nav */}
-        <nav className="flex-1 py-4 space-y-0.5 px-2 overflow-y-auto">
-          {navItems
-            .filter((item) => !item.adminOnly || user?.role === 'admin')
-            .map(({ to, icon: Icon, label }) => (
-              <NavLink
-                key={to}
-                to={to}
-                className={({ isActive }) =>
-                  cn(
-                    'flex items-center gap-3 px-3 py-2.5 rounded-md text-sm transition-colors',
-                    isActive
-                      ? 'bg-accent/15 text-accent font-semibold border-l-2 border-accent -ml-px pl-[calc(0.75rem-1px)]'
-                      : 'text-white/60 hover:text-white hover:bg-white/8'
-                  )
-                }
-              >
-                <Icon size={18} className="shrink-0" />
-                {sidebarOpen && <span>{label}</span>}
-              </NavLink>
-            ))}
+        <nav className="flex-1 py-4 space-y-0.5 px-2 overflow-y-auto" aria-label="Staff navigation">
+          {renderNavLinks(sidebarOpen)}
         </nav>
 
         {/* Logout at bottom */}
@@ -106,8 +144,18 @@ export default function DashboardLayout() {
           <Button
             variant="ghost"
             size="icon"
+            className="md:hidden"
+            onClick={() => setMobileNavOpen(true)}
+            aria-label="Open staff navigation"
+          >
+            <Menu size={20} />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="hidden md:inline-flex"
             onClick={() => setSidebarOpen(!sidebarOpen)}
-            aria-label="Toggle sidebar"
+            aria-label={sidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'}
           >
             <Menu size={20} />
           </Button>
@@ -147,7 +195,7 @@ export default function DashboardLayout() {
           </div>
         </header>
 
-        <main className="flex-1 overflow-y-auto p-6">
+        <main className="flex-1 overflow-y-auto p-4 sm:p-6">
           <Outlet />
         </main>
       </div>

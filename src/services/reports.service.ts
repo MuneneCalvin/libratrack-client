@@ -11,6 +11,6 @@ export const reportsService = {
   getFines: () => api.get('/reports/fines/'),
   getMembers: () => api.get('/reports/members/'),
   getPopularBooks: () => api.get('/reports/popular-books/'),
-  export: (type: 'csv' | 'pdf', report: string) =>
+  export: (type: 'csv', report: string) =>
     api.post('/reports/export', { type, report }, { responseType: 'blob' }),
 };

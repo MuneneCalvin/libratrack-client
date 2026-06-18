@@ -8,7 +8,7 @@ export default function NotificationBell() {
   const navigate = useNavigate();
 
   return (
-    <Button variant="ghost" size="icon" className="relative" onClick={() => navigate('/notifications')}>
+    <Button variant="ghost" size="icon" className="relative" onClick={() => navigate('/notifications')} aria-label="Open notifications">
       <Bell size={18} />
       {notificationCount > 0 && (
         <span className="absolute -top-1 -right-1 bg-danger text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
