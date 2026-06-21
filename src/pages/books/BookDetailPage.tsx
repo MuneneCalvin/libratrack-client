@@ -2,11 +2,12 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { booksService } from '@/services/books.service';
 import { QUERY_KEYS } from '@/lib/constants';
+import { formatLanguageCodes, formatPopularity, formatRating } from '@/lib/bookMetadata';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Pencil, BookOpen } from 'lucide-react';
+import { Pencil, BookOpen, Star, Tags, Languages, Library } from 'lucide-react';
 
 export default function BookDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -32,6 +33,7 @@ export default function BookDetailPage() {
 
   const book = data?.data?.data;
   if (!book) return <p className="text-danger">Book not found.</p>;
+  const visibleSubjects = book.subjects?.slice(0, 10) ?? [];
 
   return (
     <div className="max-w-4xl space-y-6">
@@ -56,6 +58,8 @@ export default function BookDetailPage() {
             <Row label="Category" value={<Badge variant="secondary">{book.categoryName}</Badge>} />
             <Row label="Publisher" value={book.publisher ?? '—'} />
             <Row label="Published Year" value={book.publishedYear ?? '—'} />
+            <Row label="Languages" value={formatLanguageCodes(book.languageCodes)} />
+            <Row label="Editions" value={book.editionCount ? `${book.editionCount}` : 'Not listed'} />
           </CardContent>
         </Card>
 
@@ -82,6 +86,40 @@ export default function BookDetailPage() {
           </CardContent>
         </Card>
       </div>
+
+      {(book.synopsis || visibleSubjects.length > 0) && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <Tags size={16} className="text-accent" /> Discovery Metadata
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {book.synopsis && (
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-text-secondary mb-2">Synopsis</p>
+                <p className="text-sm leading-6 text-text-primary">{book.synopsis}</p>
+              </div>
+            )}
+            {visibleSubjects.length > 0 && (
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-text-secondary mb-2">Subjects</p>
+                <div className="flex flex-wrap gap-2">
+                  {visibleSubjects.map((subject) => (
+                    <Badge key={subject} variant="secondary">{subject}</Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <InfoTile icon={Star} label="Rating" value={formatRating(book)} />
+        <InfoTile icon={Library} label="Popularity" value={formatPopularity(book)} />
+        <InfoTile icon={Languages} label="Languages" value={formatLanguageCodes(book.languageCodes)} />
+      </div>
     </div>
   );
 }
@@ -92,5 +130,21 @@ function Row({ label, value }: { label: string; value: React.ReactNode }) {
       <span className="text-text-secondary font-medium">{label}</span>
       <span className="text-text-primary">{value}</span>
     </div>
+  );
+}
+
+function InfoTile({ icon: Icon, label, value }: { icon: React.ComponentType<{ size?: number; className?: string }>; label: string; value: string }) {
+  return (
+    <Card>
+      <CardContent className="flex items-center gap-3 p-4">
+        <div className="rounded-lg bg-accent/10 p-2">
+          <Icon size={16} className="text-accent" />
+        </div>
+        <div>
+          <p className="text-xs text-text-secondary">{label}</p>
+          <p className="text-sm font-medium text-text-primary">{value}</p>
+        </div>
+      </CardContent>
+    </Card>
   );
 }

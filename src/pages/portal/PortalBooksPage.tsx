@@ -5,6 +5,7 @@ import { booksService, type Book } from '@/services/books.service';
 import { reservationsService } from '@/services/reservations.service';
 import { QUERY_KEYS } from '@/lib/constants';
 import { getBookCoverStyle } from '@/lib/bookCover';
+import { formatLanguageCodes, formatPopularity, formatRating } from '@/lib/bookMetadata';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -12,7 +13,7 @@ import { Input } from '@/components/ui/input';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from '@/components/ui/dialog';
-import { Search, BookOpen, CalendarCheck, Hash, Building2, Calendar } from 'lucide-react';
+import { Search, BookOpen, CalendarCheck, Hash, Building2, Calendar, Languages, Library, Star } from 'lucide-react';
 import { toast } from 'sonner';
 
 function BookCover({ book, compact = false }: { book: Book; compact?: boolean }) {
@@ -91,6 +92,9 @@ export default function PortalBooksPage() {
               <div className="space-y-2 text-sm">
                 <h3 className="font-semibold text-text-primary text-base leading-snug">{confirmBook.title}</h3>
                 <p className="text-text-secondary">{confirmBook.author}</p>
+                {confirmBook.synopsis && (
+                  <p className="text-text-secondary leading-5 line-clamp-4">{confirmBook.synopsis}</p>
+                )}
                 <div className="grid grid-cols-2 gap-2 pt-1">
                   <div className="flex items-center gap-1.5 text-text-secondary text-xs">
                     <Hash size={11} /> {confirmBook.isbn}
@@ -100,6 +104,15 @@ export default function PortalBooksPage() {
                   </div>
                   <div className="flex items-center gap-1.5 text-text-secondary text-xs">
                     <Calendar size={11} /> {confirmBook.publishedYear || 'N/A'}
+                  </div>
+                  <div className="flex items-center gap-1.5 text-text-secondary text-xs">
+                    <Languages size={11} /> {formatLanguageCodes(confirmBook.languageCodes)}
+                  </div>
+                  <div className="flex items-center gap-1.5 text-text-secondary text-xs">
+                    <Library size={11} /> {confirmBook.editionCount || 0} editions
+                  </div>
+                  <div className="flex items-center gap-1.5 text-text-secondary text-xs">
+                    <Star size={11} /> {formatRating(confirmBook)}
                   </div>
                   <div className="flex items-center gap-1.5 text-xs">
                     <Badge variant={confirmBook.availableCopies > 0 ? 'secondary' : 'destructive'} className="text-xs">
@@ -157,6 +170,21 @@ export default function PortalBooksPage() {
                 <p className="font-semibold text-text-primary text-sm leading-snug line-clamp-2">{book.title}</p>
                 <p className="text-xs text-text-secondary mt-1">{book.author}</p>
                 <p className="text-xs text-text-secondary mt-0.5">{book.categoryName}</p>
+                {book.synopsis && (
+                  <p className="text-xs text-text-secondary leading-5 mt-2 line-clamp-3">{book.synopsis}</p>
+                )}
+                {book.subjects && book.subjects.length > 0 && (
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    {book.subjects.slice(0, 3).map((subject) => (
+                      <Badge key={subject} variant="outline" className="text-[0.65rem]">{subject}</Badge>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <div className="grid grid-cols-2 gap-2 text-[0.7rem] text-text-secondary">
+                <span className="flex items-center gap-1"><Star size={11} /> {book.ratingAverage ? `${book.ratingAverage.toFixed(1)}/5` : 'No rating'}</span>
+                <span className="flex items-center gap-1"><Library size={11} /> {book.editionCount || 0} editions</span>
+                <span className="col-span-2 truncate">{formatPopularity(book)}</span>
               </div>
               <div className="flex items-center justify-between mt-2">
                 <Badge variant={book.availableCopies > 0 ? 'secondary' : 'destructive'} className="text-xs">

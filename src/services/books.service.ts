@@ -12,6 +12,16 @@ export interface Book {
   publisher?: string;
   publishedYear?: number;
   coverUrl?: string;
+  openLibraryWorkKey?: string;
+  synopsis?: string;
+  subjects?: string[];
+  languageCodes?: string[];
+  editionCount?: number;
+  ratingAverage?: number | null;
+  ratingCount?: number;
+  wantToReadCount?: number;
+  currentlyReadingCount?: number;
+  alreadyReadCount?: number;
 }
 
 export const booksService = {
