@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { PasswordInput } from '@/components/ui/password-input';
 import { UserPlus, Copy, Check } from 'lucide-react';
+import { toast } from 'sonner';
 
 const DEFAULT_PASSWORD = 'Library@1234';
 
@@ -37,8 +38,12 @@ export default function AddMemberModal({ open, onClose }: Props) {
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.members });
       const member = (res?.data as { data?: { member?: { membershipNumber?: string } } })?.data?.member;
       setSuccess({ membershipNumber: member?.membershipNumber ?? '' });
+      toast.success('Member created');
     },
-    onError: () => setError('Failed to create member. Email may already be in use.'),
+    onError: () => {
+      setError('Failed to create member. Email may already be in use.');
+      toast.error('Failed to create member');
+    },
   });
 
   function handleClose() {
@@ -51,6 +56,7 @@ export default function AddMemberModal({ open, onClose }: Props) {
   function copyPassword() {
     navigator.clipboard.writeText(form.password);
     setCopied(true);
+    toast.success('Password copied');
     setTimeout(() => setCopied(false), 2000);
   }
 

@@ -10,10 +10,14 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from '@/components/ui/dialog';
-import { Search, BookOpen, CalendarCheck, Hash, Building2, Calendar, Languages, Library, Star } from 'lucide-react';
+import {
+  Search, BookOpen, CalendarCheck, Hash, Building2, Calendar, Languages,
+  Library, Star, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight,
+} from 'lucide-react';
 import { toast } from 'sonner';
 
 function BookCover({ book, compact = false }: { book: Book; compact?: boolean }) {
@@ -46,11 +50,24 @@ export default function PortalBooksPage() {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
+  const [category, setCategory] = useState('');
+  const [sort, setSort] = useState('rating');
+  const [limit, setLimit] = useState(20);
   const [confirmBook, setConfirmBook] = useState<Book | null>(null);
 
   const { data, isLoading } = useQuery({
-    queryKey: [...QUERY_KEYS.books, 'portal', search, page],
-    queryFn: () => booksService.getAll({ search: search || undefined, page, limit: 12 }),
+    queryKey: [...QUERY_KEYS.books, 'portal', search, category, sort, limit, page],
+    queryFn: () => booksService.getAll({
+      search: search || undefined,
+      category: category || undefined,
+      sort: sort || undefined,
+      page,
+      limit,
+    }),
+  });
+  const { data: categoriesData } = useQuery({
+    queryKey: [...QUERY_KEYS.categories, 'with-books'],
+    queryFn: () => booksService.getCategories({ withBooks: true, limit: 100 }),
   });
 
   const reserveMutation = useMutation({
@@ -68,7 +85,12 @@ export default function PortalBooksPage() {
   });
 
   const books = (data?.data as { data?: Book[] })?.data ?? [];
+  const categories = categoriesData?.data?.data ?? [];
   const meta = (data?.data as { meta?: { totalPages?: number; total?: number } })?.meta;
+  const totalBooks = meta?.total ?? 0;
+  const totalPages = meta?.totalPages ?? 1;
+  const showingStart = totalBooks === 0 ? 0 : (page - 1) * limit + 1;
+  const showingEnd = totalBooks === 0 ? 0 : Math.min(page * limit, totalBooks);
 
   return (
     <div className="space-y-5">
@@ -143,16 +165,47 @@ export default function PortalBooksPage() {
         <p className="text-text-secondary text-sm mt-1">Browse the library collection and reserve books</p>
       </div>
 
-      {/* Search */}
-      <div className="relative max-w-md">
-        <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-secondary" />
-        <Input
-          className="pl-9"
-          placeholder="Search by title, author, or ISBN…"
-          value={search}
-          onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-        />
+      {/* Search and filters */}
+      <div className="grid grid-cols-1 xl:grid-cols-[minmax(16rem,1fr)_13rem_13rem] gap-3 rounded-md border border-border bg-surface p-3">
+        <div className="relative">
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-secondary" />
+          <Input
+            className="pl-9"
+            placeholder="Search by title, author, or ISBN…"
+            value={search}
+            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+          />
+        </div>
+        <Select value={category || 'ALL'} onValueChange={(value) => { setCategory(value === 'ALL' ? '' : value); setPage(1); }}>
+          <SelectTrigger className="w-full" aria-label="Filter by category">
+            <SelectValue placeholder="All categories" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="ALL">All categories</SelectItem>
+            {categories.map((cat) => (
+              <SelectItem key={cat.id} value={String(cat.id)}>
+                {cat.name}{typeof cat.bookCount === 'number' ? ` (${cat.bookCount})` : ''}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select value={sort || 'NEWEST'} onValueChange={(value) => { setSort(value === 'NEWEST' ? '' : value); setPage(1); }}>
+          <SelectTrigger className="w-full" aria-label="Sort books">
+            <SelectValue placeholder="Sort books" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="rating">Highest rated</SelectItem>
+            <SelectItem value="most_read">Most read</SelectItem>
+            <SelectItem value="popular">Most popular</SelectItem>
+            <SelectItem value="title">Title A-Z</SelectItem>
+            <SelectItem value="NEWEST">Newest</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
+
+      {meta?.total != null && (
+        <p className="text-xs text-text-secondary">Showing {books.length} of {meta.total} matching books.</p>
+      )}
 
       {isLoading && <p className="text-text-secondary">Loading books…</p>}
 
@@ -161,7 +214,7 @@ export default function PortalBooksPage() {
       )}
 
       {/* Book grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-5 gap-4">
         {books.map((book) => (
           <Card key={book.id} className="flex flex-col overflow-hidden hover:border-accent/40 transition-colors">
             <BookCover book={book} />
@@ -169,7 +222,9 @@ export default function PortalBooksPage() {
               <div className="flex-1">
                 <p className="font-semibold text-text-primary text-sm leading-snug line-clamp-2">{book.title}</p>
                 <p className="text-xs text-text-secondary mt-1">{book.author}</p>
-                <p className="text-xs text-text-secondary mt-0.5">{book.categoryName}</p>
+                <p className="text-xs text-text-secondary mt-0.5">
+                  {book.categoryName}{book.publishedYear ? ` · ${book.publishedYear}` : ''}
+                </p>
                 {book.synopsis && (
                   <p className="text-xs text-text-secondary leading-5 mt-2 line-clamp-3">{book.synopsis}</p>
                 )}
@@ -206,13 +261,73 @@ export default function PortalBooksPage() {
       </div>
 
       {/* Pagination */}
-      {meta && meta.totalPages && meta.totalPages > 1 && (
-        <div className="flex items-center justify-center gap-2 pt-2">
-          <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>Previous</Button>
-          <span className="text-sm text-text-secondary">Page {page} of {meta.totalPages}</span>
-          <Button variant="outline" size="sm" disabled={page >= meta.totalPages} onClick={() => setPage(p => p + 1)}>Next</Button>
+      {meta && (
+        <div className="rounded-xl border border-border bg-surface p-4 shadow-sm">
+          <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+            <div>
+              <p className="text-sm font-semibold text-text-primary">Page {page} of {totalPages}</p>
+              <p className="text-xs text-text-secondary">Showing {showingStart}-{showingEnd} of {totalBooks} books</p>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              {getPageItems(page, totalPages).map((item, index) => (
+                item === '...' ? (
+                  <span key={`${item}-${index}`} className="px-1 text-sm text-text-secondary">...</span>
+                ) : (
+                  <Button
+                    key={item}
+                    variant={item === page ? 'default' : 'outline'}
+                    size="icon-sm"
+                    onClick={() => setPage(item)}
+                    aria-label={`Go to page ${item}`}
+                  >
+                    {item}
+                  </Button>
+                )
+              ))}
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+            <Select value={String(limit)} onValueChange={(value) => { setLimit(Number(value)); setPage(1); }}>
+              <SelectTrigger className="w-40" aria-label="Books per page">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent align="end">
+                <SelectItem value="20">20 books / page</SelectItem>
+                <SelectItem value="40">40 books / page</SelectItem>
+                <SelectItem value="60">60 books / page</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button variant="outline" size="icon" disabled={page <= 1} onClick={() => setPage(1)} aria-label="First page">
+              <ChevronsLeft size={16} />
+            </Button>
+            <Button variant="outline" size="icon" disabled={page <= 1} onClick={() => setPage(p => p - 1)} aria-label="Previous page">
+              <ChevronLeft size={16} />
+            </Button>
+            <Button variant="outline" size="icon" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)} aria-label="Next page">
+              <ChevronRight size={16} />
+            </Button>
+            <Button variant="outline" size="icon" disabled={page >= totalPages} onClick={() => setPage(totalPages)} aria-label="Last page">
+              <ChevronsRight size={16} />
+            </Button>
+            </div>
+          </div>
         </div>
       )}
     </div>
   );
+}
+
+function getPageItems(page: number, totalPages: number) {
+  if (totalPages <= 7) {
+    return Array.from({ length: totalPages }, (_, index) => index + 1);
+  }
+  const items: Array<number | '...'> = [1];
+  const start = Math.max(2, page - 1);
+  const end = Math.min(totalPages - 1, page + 1);
+  if (start > 2) items.push('...');
+  for (let current = start; current <= end; current += 1) items.push(current);
+  if (end < totalPages - 1) items.push('...');
+  items.push(totalPages);
+  return items;
 }

@@ -24,6 +24,12 @@ export interface Book {
   alreadyReadCount?: number;
 }
 
+export interface BookCategory {
+  id: number;
+  name: string;
+  bookCount?: number;
+}
+
 export const booksService = {
   getAll: (params?: Record<string, unknown>) =>
     api.get<{ data: Book[]; meta: { page: number; limit: number; total: number; totalPages: number } }>('/books/', { params }),
@@ -32,5 +38,6 @@ export const booksService = {
     api.post<{ data: Book }>('/books/', data),
   update: (id: number, data: Partial<Book>) => api.patch<{ data: Book }>(`/books/${id}/`, data),
   remove: (id: number) => api.delete(`/books/${id}/`),
-  getCategories: () => api.get<{ data: { id: number; name: string }[] }>('/categories/'),
+  getCategories: (params?: Record<string, unknown>) =>
+    api.get<{ data: BookCategory[]; meta?: object }>('/categories/', { params }),
 };

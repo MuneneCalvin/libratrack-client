@@ -75,7 +75,7 @@ export default function BorrowForm() {
   }
 
   return (
-    <div className="max-w-5xl space-y-6">
+    <div className="w-full space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-text-primary">Process Borrow</h1>
         <p className="text-text-secondary text-sm mt-1">Create a borrow record for one member and one or more available books.</p>

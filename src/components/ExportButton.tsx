@@ -4,9 +4,9 @@ import { buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { Download } from 'lucide-react';
 
-interface Props { report: string; }
+interface Props { report: string; label?: string; }
 
-export default function ExportButton({ report }: Props) {
+export default function ExportButton({ report, label = 'Export CSV' }: Props) {
   const [loading, setLoading] = useState(false);
 
   async function handleExport() {
@@ -27,11 +27,11 @@ export default function ExportButton({ report }: Props) {
   return (
     <button
       type="button"
-      className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'gap-2')}
+      className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'w-full gap-2 sm:w-auto')}
       onClick={handleExport}
       disabled={loading}
     >
-      <Download size={15} /> {loading ? 'Exporting...' : 'Export CSV'}
+      <Download size={15} /> {loading ? 'Exporting...' : label}
     </button>
   );
 }

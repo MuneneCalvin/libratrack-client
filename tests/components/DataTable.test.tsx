@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { describe, it, expect } from 'vitest';
 import DataTable from '@/components/DataTable';
 
@@ -29,5 +30,20 @@ describe('DataTable', () => {
   it('shows loading skeletons when isLoading', () => {
     const { container } = render(<DataTable columns={columns} data={[]} isLoading />);
     expect(container.querySelectorAll('[data-slot="skeleton"]')).toHaveLength(6);
+  });
+
+  it('sorts sortable columns in both directions', async () => {
+    const user = userEvent.setup();
+    const sortableColumns = [
+      { key: 'name', header: 'Name', sortValue: (row: { name: string }) => row.name, render: (row: { name: string }) => row.name },
+    ];
+
+    render(<DataTable columns={sortableColumns} data={[{ name: 'Bob' }, { name: 'Alice' }]} />);
+
+    await user.click(screen.getByText('Name'));
+    expect(screen.getAllByRole('row')[1]).toHaveTextContent('Alice');
+
+    await user.click(screen.getByText('Name'));
+    expect(screen.getAllByRole('row')[1]).toHaveTextContent('Bob');
   });
 });

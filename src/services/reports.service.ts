@@ -3,7 +3,10 @@ import { api } from './api';
 export const reportsService = {
   getSummary: () => api.get<{
     totalBooks: number; totalMembers: number;
+    totalCopies?: number; availableBooks?: number; availableCopies?: number;
+    borrowedBooks?: number; reservedBooks?: number;
     activeBorrows: number; overdueCount: number; unpaidFinesTotal: number;
+    pendingReservations?: number;
   }>('/reports/summary/'),
   getInventory: () => api.get('/reports/inventory/'),
   getBorrowing: () => api.get('/reports/borrowing/'),

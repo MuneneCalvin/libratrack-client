@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { toast } from 'sonner';
 
 export default function BookNewPage() {
   const navigate = useNavigate();
@@ -27,16 +28,23 @@ export default function BookNewPage() {
       publisher: form.publisher || undefined,
       publishedYear: form.publishedYear ? Number(form.publishedYear) : undefined,
     }),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: QUERY_KEYS.books }); navigate('/books'); },
-    onError: (e: { response?: { data?: { message?: string } } }) =>
-      setError(e.response?.data?.message ?? 'Failed to create book'),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.books });
+      toast.success('Book created');
+      navigate('/books');
+    },
+    onError: (e: { response?: { data?: { message?: string } } }) => {
+      const message = e.response?.data?.message ?? 'Failed to create book';
+      setError(message);
+      toast.error(message);
+    },
   });
 
   const set = (key: string) => (e: React.ChangeEvent<HTMLInputElement>) =>
     setForm((f) => ({ ...f, [key]: e.target.value }));
 
   return (
-    <div className="max-w-3xl space-y-6">
+    <div className="w-full space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-text-primary">Add Book</h1>
         <p className="text-text-secondary text-sm mt-0.5">Fill in the details to add a new book to the catalogue</p>
@@ -80,7 +88,7 @@ export default function BookNewPage() {
             </div>
             <div className="space-y-1.5 sm:col-span-2">
               <Label>Published Year <span className="text-text-secondary text-xs">(optional)</span></Label>
-              <Input type="number" value={form.publishedYear} onChange={set('publishedYear')} className="sm:max-w-[50%]" />
+              <Input type="number" value={form.publishedYear} onChange={set('publishedYear')} />
             </div>
           </div>
 
@@ -90,7 +98,7 @@ export default function BookNewPage() {
             </div>
           )}
 
-          <div className="flex gap-3 pt-2">
+          <div className="flex flex-col gap-3 pt-2 sm:flex-row">
             <Button onClick={() => mutation.mutate()} disabled={mutation.isPending}>
               {mutation.isPending ? 'Saving…' : 'Save Book'}
             </Button>

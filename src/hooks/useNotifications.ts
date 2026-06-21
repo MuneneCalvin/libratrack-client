@@ -9,9 +9,14 @@ export function useNotifications() {
     queryKey: QUERY_KEYS.notifications,
     queryFn: async () => {
       const { data } = await notificationsService.getOwn();
-      const unread = data.data.filter((n: { isRead: boolean }) => !n.isRead).length;
+      const notifications = Array.isArray(data?.data)
+        ? data.data
+        : Array.isArray(data)
+          ? data
+          : [];
+      const unread = notifications.filter((n: { isRead: boolean }) => !n.isRead).length;
       setNotificationCount(unread);
-      return data.data;
+      return notifications;
     },
   });
 }

@@ -50,7 +50,7 @@ export default function ReturnForm() {
   const selectedTx = activeTransactions.find((t) => t.id === Number(transactionId));
 
   return (
-    <div className="max-w-xl space-y-6">
+    <div className="w-full space-y-6">
       <h1 className="text-2xl font-bold text-text-primary">Process Return</h1>
       <Card>
         <CardContent className="pt-6 space-y-5">
@@ -79,7 +79,7 @@ export default function ReturnForm() {
 
           {error && <p className="text-danger text-sm">{error}</p>}
 
-          <div className="flex gap-3 pt-2">
+          <div className="flex flex-col gap-3 pt-2 sm:flex-row">
             <Button onClick={() => mutation.mutate()} disabled={!transactionId || mutation.isPending}>
               {mutation.isPending ? 'Processing...' : 'Confirm Return'}
             </Button>

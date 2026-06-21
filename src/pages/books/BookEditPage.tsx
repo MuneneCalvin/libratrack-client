@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
+import { toast } from 'sonner';
 
 export default function BookEditPage() {
   const { id } = useParams<{ id: string }>();
@@ -43,14 +44,21 @@ export default function BookEditPage() {
       publisher: form.publisher || undefined,
       publishedYear: form.publishedYear ? Number(form.publishedYear) : undefined,
     }),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: QUERY_KEYS.books }); navigate('/books'); },
-    onError: (e: { response?: { data?: { message?: string } } }) =>
-      setError(e.response?.data?.message ?? 'Failed to update book'),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.books });
+      toast.success('Book updated');
+      navigate('/books');
+    },
+    onError: (e: { response?: { data?: { message?: string } } }) => {
+      const message = e.response?.data?.message ?? 'Failed to update book';
+      setError(message);
+      toast.error(message);
+    },
   });
 
   if (isLoading) {
     return (
-      <div className="max-w-3xl space-y-4">
+      <div className="w-full space-y-4">
         <Skeleton className="h-8 w-48" />
         <Skeleton className="h-96 w-full" />
       </div>
@@ -61,7 +69,7 @@ export default function BookEditPage() {
     setForm((f) => ({ ...f, [key]: e.target.value }));
 
   return (
-    <div className="max-w-3xl space-y-6">
+    <div className="w-full space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-text-primary">Edit Book</h1>
         <p className="text-text-secondary text-sm mt-0.5">Update the book information below</p>
@@ -115,7 +123,7 @@ export default function BookEditPage() {
             </div>
           )}
 
-          <div className="flex gap-3 pt-2">
+          <div className="flex flex-col gap-3 pt-2 sm:flex-row">
             <Button onClick={() => mutation.mutate()} disabled={mutation.isPending}>
               {mutation.isPending ? 'Saving…' : 'Save Changes'}
             </Button>

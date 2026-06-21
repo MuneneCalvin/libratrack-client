@@ -1,15 +1,21 @@
-import { useQuery } from '@tanstack/react-query';
+import { useEffect, useState } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '@/store/auth.store';
 import { transactionsService } from '@/services/transactions.service';
 import { finesService } from '@/services/fines.service';
 import { reservationsService } from '@/services/reservations.service';
 import { membersService } from '@/services/members.service';
+import { booksService, type Book } from '@/services/books.service';
 import { QUERY_KEYS } from '@/lib/constants';
+import { getBookCoverStyle } from '@/lib/bookCover';
+import { formatRating } from '@/lib/bookMetadata';
 import StatsCard from '@/components/StatsCard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeftRight, CalendarCheck, AlertCircle, BookOpen } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { ArrowLeftRight, CalendarCheck, AlertCircle, BookOpen, Sparkles, ChevronLeft, ChevronRight, Calendar, Tag } from 'lucide-react';
 import { formatDate, formatCurrency } from '@/lib/utils';
+import { toast } from 'sonner';
 
 function getGreeting() {
   const h = new Date().getHours();
@@ -22,9 +28,85 @@ function formatToday() {
   return new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 }
 
+function getVisibleBooks(books: Book[], start: number) {
+  if (books.length === 0) return [];
+  const visibleCount = Math.min(4, books.length);
+  return Array.from({ length: visibleCount }, (_, index) => books[(start + index) % books.length]);
+}
+
+function RecommendedBookSlide({
+  book,
+  index,
+  onReserve,
+  isReserving,
+}: {
+  book: Book;
+  index: number;
+  onReserve: (book: Book) => void;
+  isReserving: boolean;
+}) {
+  const cover = getBookCoverStyle(book.categoryName);
+  const responsiveVisibility = index === 0
+    ? ''
+    : index === 1
+      ? 'hidden md:block'
+      : index === 2
+        ? 'hidden lg:block'
+        : 'hidden 2xl:block';
+
+  return (
+    <div className={`${responsiveVisibility} group relative min-h-[24rem] overflow-hidden rounded-md border border-border bg-surface-hover text-white shadow-sm`}>
+      {book.coverUrl ? (
+        <img src={book.coverUrl} alt="" className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]" />
+      ) : (
+        <div className={`${cover.className} absolute inset-0`}>
+          <div className="absolute inset-x-0 top-0 h-1.5 bg-white/35" />
+          <div className="absolute -right-12 -top-12 size-40 rounded-full border border-white/20" />
+          <BookOpen size={64} className="absolute right-5 top-5 text-white/20" />
+        </div>
+      )}
+      <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/55 to-slate-950/10" />
+      <div className="relative flex min-h-[24rem] flex-col justify-between p-4">
+        <div className="flex items-start justify-between gap-2">
+          <Badge className="bg-white/90 text-slate-950 hover:bg-white">{book.availableCopies} available</Badge>
+          <span className="rounded-full bg-black/35 px-2 py-1 text-xs font-semibold backdrop-blur">
+            {formatRating(book)}
+          </span>
+        </div>
+
+        <div className="space-y-3">
+          <div className="space-y-2">
+            <div className="flex flex-wrap items-center gap-2 text-xs font-medium text-white/80">
+              <span className="inline-flex items-center gap-1"><Calendar size={12} /> {book.publishedYear || 'Year N/A'}</span>
+              <span className="inline-flex items-center gap-1"><Tag size={12} /> {book.categoryName}</span>
+            </div>
+            <h2 className="line-clamp-3 text-2xl font-bold leading-tight tracking-tight">{book.title}</h2>
+            <p className="line-clamp-1 text-sm font-medium text-white/80">{book.author}</p>
+          </div>
+
+          {book.synopsis && (
+            <p className="line-clamp-2 text-xs leading-5 text-white/75">{book.synopsis}</p>
+          )}
+
+          <Button
+            className="w-full gap-2 bg-white text-slate-950 hover:bg-white/90"
+            disabled={book.availableCopies === 0 || isReserving}
+            onClick={() => onReserve(book)}
+          >
+            <CalendarCheck size={15} />
+            {isReserving ? 'Reserving...' : 'Reserve'}
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function PortalDashboardPage() {
   const { user } = useAuthStore();
   const memberId = user?.memberId ?? 0;
+  const queryClient = useQueryClient();
+  const [activeSlide, setActiveSlide] = useState(0);
 
   const { data: memberData } = useQuery({
     queryKey: QUERY_KEYS.member(memberId),
@@ -46,15 +128,49 @@ export default function PortalDashboardPage() {
     queryFn: () => reservationsService.getByMember(memberId, { status: 'PENDING' }),
     enabled: !!user?.memberId,
   });
-
-  if (!user?.memberId) return <p className="text-text-secondary">Not available.</p>;
-  if (isLoading) return <p className="text-text-secondary">Loading…</p>;
+  const { data: recommendedData } = useQuery({
+    queryKey: [...QUERY_KEYS.books, 'member-recommended'],
+    queryFn: () => booksService.getAll({ sort: 'rating', limit: 8, available: 'true' }),
+  });
 
   const member = (memberData?.data as { data?: { fullName?: string } })?.data;
   const activeTx = (txData?.data as { data?: { id: number; items: { book: { title: string } }[]; dueDate: string; status: string }[] })?.data ?? [];
   const unpaidFines = (finesData?.data as { data?: { id: number; amount: number; reason: string }[] })?.data ?? [];
   const pendingRes = (resData?.data as { data?: { id: number; bookTitle: string; expiresAt: string }[] })?.data ?? [];
+  const recommended = (recommendedData?.data as { data?: Book[] })?.data ?? [];
   const totalFines = unpaidFines.reduce((s, f) => s + Number(f.amount), 0);
+  const visibleRecommendations = getVisibleBooks(recommended, activeSlide);
+
+  const reserveMutation = useMutation({
+    mutationFn: (book: Book) => reservationsService.create(memberId, book.id),
+    onSuccess: (_, book) => {
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.memberReservations(memberId) });
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.books });
+      toast.success('Reservation created', {
+        description: `${book.title} has been added to your reservations.`,
+      });
+    },
+    onError: () => {
+      toast.error('Failed to reserve book');
+    },
+  });
+
+  useEffect(() => {
+    if (recommended.length <= 1) return;
+    const prefersReducedMotion = typeof window !== 'undefined'
+      && 'matchMedia' in window
+      && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (prefersReducedMotion) return;
+
+    const interval = window.setInterval(() => {
+      setActiveSlide((slide) => (slide + 1) % recommended.length);
+    }, 6000);
+
+    return () => window.clearInterval(interval);
+  }, [recommended.length]);
+
+  if (!user?.memberId) return <p className="text-text-secondary">Not available.</p>;
+  if (isLoading) return <p className="text-text-secondary">Loading…</p>;
 
   const displayName = member?.fullName ?? user?.email?.split('@')[0] ?? 'there';
   const overdueItems = activeTx.filter((t) => new Date(t.dueDate) < new Date());
@@ -76,7 +192,69 @@ export default function PortalDashboardPage() {
         <StatsCard title="Outstanding Fines" value={formatCurrency(totalFines)} icon={AlertCircle} variant={totalFines > 0 ? 'danger' : 'default'} />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <Card className="overflow-hidden">
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <Sparkles size={16} className="text-accent" /> Recommended Books
+          </CardTitle>
+          <p className="text-xs text-text-secondary">Highly rated books currently available to reserve.</p>
+        </CardHeader>
+        <CardContent className="p-0">
+          {visibleRecommendations.length > 0 ? (
+            <div className="space-y-4 p-4">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
+                {visibleRecommendations.map((book, index) => (
+                  <RecommendedBookSlide
+                    key={`${book.id}-${index}`}
+                    book={book}
+                    index={index}
+                    isReserving={reserveMutation.isPending}
+                    onReserve={(selectedBook) => reserveMutation.mutate(selectedBook)}
+                  />
+                ))}
+              </div>
+
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-1.5">
+                  {recommended.map((book, index) => (
+                    <button
+                      key={book.id}
+                      type="button"
+                      className={`h-2 rounded-full transition-all ${index === activeSlide % recommended.length ? 'w-7 bg-accent' : 'w-2 bg-border hover:bg-accent/50'}`}
+                      aria-label={`Show recommendation ${index + 1}`}
+                      onClick={() => setActiveSlide(index)}
+                    />
+                  ))}
+                </div>
+                {recommended.length > 1 && (
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      aria-label="Previous recommendation"
+                      onClick={() => setActiveSlide((slide) => (slide - 1 + recommended.length) % recommended.length)}
+                    >
+                      <ChevronLeft size={16} />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      aria-label="Next recommendation"
+                      onClick={() => setActiveSlide((slide) => (slide + 1) % recommended.length)}
+                    >
+                      <ChevronRight size={16} />
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div className="px-5 py-10 text-sm text-text-secondary">No recommendations available yet.</div>
+          )}
+        </CardContent>
+      </Card>
+
+      <div className="grid grid-cols-1 xl:grid-cols-[1.2fr_1fr_1fr] gap-6">
         {/* Currently Borrowed */}
         <Card>
           <CardHeader><CardTitle className="text-base flex items-center gap-2"><BookOpen size={16} /> Currently Borrowed</CardTitle></CardHeader>
@@ -119,6 +297,22 @@ export default function PortalDashboardPage() {
                   </div>
                 ))}
               </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader><CardTitle className="text-base flex items-center gap-2"><AlertCircle size={16} /> Fine Summary</CardTitle></CardHeader>
+          <CardContent className="space-y-3">
+            {unpaidFines.length === 0 ? (
+              <p className="text-text-secondary text-sm py-2">No unpaid fines.</p>
+            ) : (
+              unpaidFines.slice(0, 4).map((fine) => (
+                <div key={fine.id} className="flex items-center justify-between gap-3 rounded-md border border-border p-3 text-sm">
+                  <span className="text-text-primary">{fine.reason}</span>
+                  <span className="font-semibold text-danger">{formatCurrency(Number(fine.amount))}</span>
+                </div>
+              ))
             )}
           </CardContent>
         </Card>

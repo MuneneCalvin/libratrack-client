@@ -1,12 +1,17 @@
+import { useMemo, useState, type ReactNode } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ChevronLeft, ChevronRight, Inbox } from 'lucide-react';
+import { ArrowDownAZ, ArrowUpAZ, ChevronsUpDown, ChevronLeft, ChevronRight, Inbox } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface Column<T> {
   key: string;
   header: string;
-  render: (row: T) => React.ReactNode;
+  render: (row: T) => ReactNode;
+  sortValue?: (row: T) => string | number | null | undefined;
+  className?: string;
+  headerClassName?: string;
 }
 
 interface Props<T> {
@@ -28,6 +33,33 @@ export default function DataTable<T>({
   onPageChange,
   emptyMessage = 'No records found.',
 }: Props<T>) {
+  const [sortKey, setSortKey] = useState<string | null>(null);
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+  const sortedData = useMemo(() => {
+    const column = columns.find((col) => col.key === sortKey && col.sortValue);
+    if (!column?.sortValue) return data;
+
+    return [...data].sort((a, b) => {
+      const aValue = column.sortValue?.(a);
+      const bValue = column.sortValue?.(b);
+      const compare = String(aValue ?? '').localeCompare(String(bValue ?? ''), undefined, {
+        numeric: true,
+        sensitivity: 'base',
+      });
+      return sortDirection === 'asc' ? compare : -compare;
+    });
+  }, [columns, data, sortDirection, sortKey]);
+
+  function toggleSort(column: Column<T>) {
+    if (!column.sortValue) return;
+    if (sortKey === column.key) {
+      setSortDirection((direction) => (direction === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortKey(column.key);
+      setSortDirection('asc');
+    }
+  }
+
   if (isLoading) {
     return (
       <div className="rounded-md border border-border overflow-hidden">
@@ -47,16 +79,39 @@ export default function DataTable<T>({
 
   return (
     <div className="space-y-3">
-      <div className="rounded-md border border-border overflow-hidden">
-        <Table>
+      <div className="rounded-md border border-border overflow-x-auto">
+        <Table className="min-w-[64rem]">
           <TableHeader>
             <TableRow className="bg-primary hover:bg-primary dark:bg-surface-hover dark:hover:bg-surface-hover border-b border-white/10 dark:border-border">
               {columns.map((col) => (
                 <TableHead
                   key={col.key}
-                  className="text-white/80 dark:text-text-secondary font-medium text-xs uppercase tracking-wide"
+                  aria-sort={sortKey === col.key ? (sortDirection === 'asc' ? 'ascending' : 'descending') : undefined}
+                  tabIndex={col.sortValue ? 0 : undefined}
+                  className={cn(
+                    'text-white/80 dark:text-text-secondary font-medium text-xs uppercase tracking-wide',
+                    col.sortValue && 'cursor-pointer select-none',
+                    col.headerClassName,
+                  )}
+                  onClick={() => toggleSort(col)}
+                  onKeyDown={(event) => {
+                    if (!col.sortValue) return;
+                    if (event.key === 'Enter' || event.key === ' ') {
+                      event.preventDefault();
+                      toggleSort(col);
+                    }
+                  }}
                 >
-                  {col.header}
+                  <span className="inline-flex items-center gap-1.5">
+                    {col.header}
+                    {col.sortValue && (
+                      sortKey === col.key
+                        ? sortDirection === 'asc'
+                          ? <ArrowUpAZ size={13} />
+                          : <ArrowDownAZ size={13} />
+                        : <ChevronsUpDown size={13} className="opacity-60" />
+                    )}
+                  </span>
                 </TableHead>
               ))}
             </TableRow>
@@ -72,13 +127,13 @@ export default function DataTable<T>({
                 </TableCell>
               </TableRow>
             ) : (
-              data.map((row, i) => (
+              sortedData.map((row, i) => (
                 <TableRow
                   key={i}
                   className="hover:bg-accent/5 border-b border-border last:border-0 transition-colors"
                 >
                   {columns.map((col) => (
-                    <TableCell key={col.key}>{col.render(row)}</TableCell>
+                    <TableCell key={col.key} className={col.className}>{col.render(row)}</TableCell>
                   ))}
                 </TableRow>
               ))
@@ -87,7 +142,7 @@ export default function DataTable<T>({
         </Table>
       </div>
       {totalPages > 1 && (
-        <div className="flex items-center justify-end gap-2">
+        <div className="flex flex-wrap items-center justify-center gap-2 sm:justify-end">
           <Button
             variant="outline"
             size="sm"

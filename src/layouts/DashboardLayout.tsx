@@ -14,7 +14,7 @@ import {
 import { cn } from '@/lib/utils';
 import {
   LayoutDashboard, BookOpen, Users, ArrowLeftRight,
-  CalendarCheck, AlertCircle, BarChart2, Bell, Settings, Menu, Moon, Sun, LogOut, User,
+  CalendarCheck, AlertCircle, BarChart2, Settings, Menu, Moon, Sun, LogOut, User,
 } from 'lucide-react';
 
 const navItems = [
@@ -25,7 +25,6 @@ const navItems = [
   { to: '/reservations', icon: CalendarCheck, label: 'Reservations' },
   { to: '/fines', icon: AlertCircle, label: 'Fines' },
   { to: '/reports', icon: BarChart2, label: 'Reports' },
-  { to: '/notifications', icon: Bell, label: 'Notifications' },
   { to: '/settings', icon: Settings, label: 'Settings', adminOnly: true },
 ];
 
@@ -195,7 +194,7 @@ export default function DashboardLayout() {
           </div>
         </header>
 
-        <main className="flex-1 overflow-y-auto p-4 sm:p-6">
+        <main className="min-w-0 flex-1 overflow-y-auto p-4 sm:p-6">
           <Outlet />
         </main>
       </div>

@@ -5,9 +5,9 @@ import { transactionsService } from '@/services/transactions.service';
 import { QUERY_KEYS } from '@/lib/constants';
 import StatsCard from '@/components/StatsCard';
 import { useAuthStore } from '@/store/auth.store';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { BookOpen, Users, ArrowLeftRight, AlertCircle, DollarSign, CalendarCheck } from 'lucide-react';
+import { BookOpen, Users, ArrowLeftRight, AlertCircle, DollarSign, CalendarCheck, Boxes, Star } from 'lucide-react';
 import { formatDate, formatCurrency } from '@/lib/utils';
 
 function getGreeting() {
@@ -36,12 +36,25 @@ export default function DashboardPage() {
     queryKey: [...QUERY_KEYS.transactions, 'overdue-recent'],
     queryFn: () => transactionsService.getAll({ status: 'OVERDUE', limit: 5 }),
   });
+  const { data: inventoryData } = useQuery({
+    queryKey: QUERY_KEYS.reports.inventory,
+    queryFn: () => reportsService.getInventory(),
+  });
+  const { data: popularData } = useQuery({
+    queryKey: QUERY_KEYS.reports.popularBooks,
+    queryFn: () => reportsService.getPopularBooks(),
+  });
 
   const s = (summary?.data as { data?: Record<string, unknown> })?.data ?? (summary?.data as Record<string, unknown>);
   const overdueTx = (overdueData?.data as { data?: { id: number; memberName: string; dueDate: string; items: { book: { title: string } }[] }[] })?.data ?? [];
+  const categories = (inventoryData?.data as { data?: { categories?: { name: string; count: number }[] } })?.data?.categories ?? [];
+  const popularBooks = (popularData?.data as { data?: { id: number; title: string; author: string; borrowCount: number }[] })?.data ?? [];
 
   const displayName = user?.email?.split('@')[0] ?? 'there';
   const roleLabel = user?.role === 'admin' ? 'Administrator' : 'Librarian';
+  const availableCopies = s?.availableCopies ?? s?.availableBooks ?? '—';
+  const borrowedBooks = s?.borrowedBooks ?? s?.activeBorrows ?? '—';
+  const reservedBooks = s?.reservedBooks ?? s?.pendingReservations ?? '—';
 
   return (
     <div className="space-y-8">
@@ -54,16 +67,17 @@ export default function DashboardPage() {
       </div>
 
       {/* Stat cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6 gap-4">
-        <StatsCard title="Active Borrows" value={s?.activeBorrows ?? '—'} icon={ArrowLeftRight} variant="default" />
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-7 gap-4">
+        <StatsCard title="Titles" value={s?.totalBooks ?? '—'} icon={BookOpen} variant="success" />
+        <StatsCard title="Available Copies" value={availableCopies} icon={Boxes} variant="success" />
+        <StatsCard title="Given Out" value={borrowedBooks} icon={ArrowLeftRight} variant="default" />
+        <StatsCard title="Reserved" value={reservedBooks} icon={CalendarCheck} variant="default" />
         <StatsCard title="Overdue" value={s?.overdueCount ?? '—'} icon={AlertCircle} variant="danger" />
-        <StatsCard title="Total Books" value={s?.totalBooks ?? '—'} icon={BookOpen} variant="success" />
         <StatsCard title="Members" value={s?.totalMembers ?? '—'} icon={Users} variant="default" />
-        <StatsCard title="Reservations" value={s?.pendingReservations ?? '—'} icon={CalendarCheck} variant="default" />
         <StatsCard title="Unpaid Fines" value={s?.unpaidFinesTotal != null ? formatCurrency(Number(s.unpaidFinesTotal)) : '—'} icon={DollarSign} variant="danger" />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 xl:grid-cols-[1fr_1.2fr_1fr] gap-6">
         {/* Quick Actions */}
         <div>
           <h2 className="text-sm font-semibold text-text-secondary uppercase tracking-wider mb-3">Quick Actions</h2>
@@ -112,7 +126,59 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
         </div>
+
+        <div>
+          <h2 className="text-sm font-semibold text-text-secondary uppercase tracking-wider mb-3">Collection Health</h2>
+          <Card>
+            <CardContent className="space-y-4 p-4">
+              <div className="flex items-center gap-3">
+                <div className="rounded-lg bg-accent/10 p-2">
+                  <Boxes size={18} className="text-accent" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-text-primary">Inventory mix</p>
+                  <p className="text-xs text-text-secondary">Top categories by catalog size.</p>
+                </div>
+              </div>
+              <div className="space-y-3">
+                {categories.slice(0, 5).map((category) => (
+                  <div key={category.name}>
+                    <div className="mb-1 flex items-center justify-between text-xs">
+                      <span className="font-medium text-text-primary">{category.name}</span>
+                      <span className="text-text-secondary">{category.count}</span>
+                    </div>
+                    <div className="h-2 rounded-full bg-border">
+                      <div
+                        className="h-2 rounded-full bg-accent"
+                        style={{ width: `${Math.min(100, (category.count / Math.max(1, Number(s?.totalBooks ?? 1))) * 100)}%` }}
+                      />
+                    </div>
+                  </div>
+                ))}
+                {categories.length === 0 && <p className="text-sm text-text-secondary">No category data yet.</p>}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <Star size={16} className="text-accent" /> Popular Titles
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3">
+          {popularBooks.slice(0, 4).map((book) => (
+            <div key={book.id} className="rounded-md border border-border bg-surface-hover/40 p-3">
+              <p className="line-clamp-2 text-sm font-semibold text-text-primary">{book.title}</p>
+              <p className="mt-1 text-xs text-text-secondary">{book.author}</p>
+              <Badge variant="secondary" className="mt-3 text-xs">{book.borrowCount} borrows</Badge>
+            </div>
+          ))}
+          {popularBooks.length === 0 && <p className="text-sm text-text-secondary">No borrowing activity yet.</p>}
+        </CardContent>
+      </Card>
     </div>
   );
 }

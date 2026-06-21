@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { toast } from 'sonner';
 
 export default function MemberNewPage() {
   const navigate = useNavigate();
@@ -19,16 +20,23 @@ export default function MemberNewPage() {
       email: form.email, password: form.password, fullName: form.fullName,
       phone: form.phone || undefined, address: form.address || undefined,
     }),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: QUERY_KEYS.members }); navigate('/members'); },
-    onError: (e: { response?: { data?: { message?: string } } }) =>
-      setError(e.response?.data?.message ?? 'Failed to create member'),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.members });
+      toast.success('Member created');
+      navigate('/members');
+    },
+    onError: (e: { response?: { data?: { message?: string } } }) => {
+      const message = e.response?.data?.message ?? 'Failed to create member';
+      setError(message);
+      toast.error(message);
+    },
   });
 
   const set = (key: string) => (e: React.ChangeEvent<HTMLInputElement>) =>
     setForm((f) => ({ ...f, [key]: e.target.value }));
 
   return (
-    <div className="max-w-3xl space-y-6">
+    <div className="w-full space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-text-primary">Add Member</h1>
         <p className="text-text-secondary text-sm mt-0.5">Register a new library member account</p>
@@ -41,7 +49,7 @@ export default function MemberNewPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5 sm:col-span-2">
               <Label>Full Name <span className="text-danger">*</span></Label>
-              <Input value={form.fullName} onChange={set('fullName')} required className="sm:max-w-[50%]" />
+              <Input value={form.fullName} onChange={set('fullName')} required />
             </div>
             <div className="space-y-1.5">
               <Label>Email <span className="text-danger">*</span></Label>
