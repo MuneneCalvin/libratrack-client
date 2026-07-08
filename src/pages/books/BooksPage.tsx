@@ -13,12 +13,15 @@ import { Plus, Eye, Pencil, Trash2, BookOpen, Layers3, Star } from 'lucide-react
 import { useAuthStore } from '@/store/auth.store';
 import { toast } from 'sonner';
 import { BookThumb, RatingPill } from '@/components/CatalogVisuals';
+import ConfirmDialog from '@/components/ConfirmDialog';
+import { TableActionButton, TableActionGroup } from '@/components/TableActions';
 
 export default function BooksPage() {
   const [page, setPage] = useState(1);
   const [q, setQ] = useState('');
   const [category, setCategory] = useState('');
   const [sort, setSort] = useState('');
+  const [bookToDelete, setBookToDelete] = useState<Book | null>(null);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { user } = useAuthStore();
@@ -42,6 +45,7 @@ export default function BooksPage() {
     mutationFn: booksService.remove,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.books });
+      setBookToDelete(null);
       toast.success('Book deleted');
     },
     onError: () => {
@@ -84,19 +88,13 @@ export default function BooksPage() {
       </span>
     )},
     { key: 'actions', header: '', render: (b: Book) => (
-      <div className="flex gap-2 justify-end">
-        <Button variant="ghost" size="icon" aria-label="View book" onClick={() => navigate(`/books/${b.id}`)}>
-          <Eye size={15} />
-        </Button>
-        <Button variant="ghost" size="icon" aria-label="Edit book" onClick={() => navigate(`/books/${b.id}/edit`)}>
-          <Pencil size={15} />
-        </Button>
+      <TableActionGroup>
+        <TableActionButton label="View" icon={Eye} tone="neutral" iconOnly onClick={() => navigate(`/books/${b.id}`)} />
+        <TableActionButton label="Edit" icon={Pencil} tone="accent" iconOnly onClick={() => navigate(`/books/${b.id}/edit`)} />
         {user?.role === 'admin' && (
-          <Button variant="ghost" size="icon" className="text-danger" onClick={() => { if (confirm('Delete this book?')) deleteMutation.mutate(b.id); }}>
-            <Trash2 size={15} />
-          </Button>
+          <TableActionButton label="Delete" icon={Trash2} tone="danger" iconOnly onClick={() => setBookToDelete(b)} />
         )}
-      </div>
+      </TableActionGroup>
     )},
   ];
   const books = (data?.data as { data?: Book[] })?.data ?? [];
@@ -106,6 +104,17 @@ export default function BooksPage() {
   const ratedBooks = books.filter((book) => book.ratingAverage);
 
   return (
+    <>
+    <ConfirmDialog
+      open={!!bookToDelete}
+      title="Delete book?"
+      description={bookToDelete ? `This permanently removes "${bookToDelete.title}" from the catalogue. This action cannot be undone.` : ''}
+      confirmLabel="Delete book"
+      tone="danger"
+      isPending={deleteMutation.isPending}
+      onOpenChange={(open) => !open && setBookToDelete(null)}
+      onConfirm={() => bookToDelete && deleteMutation.mutate(bookToDelete.id)}
+    />
     <div className="w-full space-y-5">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
@@ -161,6 +170,7 @@ export default function BooksPage() {
         onPageChange={setPage}
       />
     </div>
+    </>
   );
 }
 

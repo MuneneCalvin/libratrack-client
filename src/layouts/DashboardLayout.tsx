@@ -18,14 +18,14 @@ import {
 } from 'lucide-react';
 
 const navItems = [
-  { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-  { to: '/books', icon: BookOpen, label: 'Books' },
-  { to: '/members', icon: Users, label: 'Members' },
-  { to: '/transactions', icon: ArrowLeftRight, label: 'Transactions' },
-  { to: '/reservations', icon: CalendarCheck, label: 'Reservations' },
-  { to: '/fines', icon: AlertCircle, label: 'Fines' },
-  { to: '/reports', icon: BarChart2, label: 'Reports' },
-  { to: '/settings', icon: Settings, label: 'Settings', adminOnly: true },
+  { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', roles: ['admin', 'librarian'] },
+  { to: '/books', icon: BookOpen, label: 'Books', roles: ['admin', 'librarian'] },
+  { to: '/members', icon: Users, label: 'Members', roles: ['admin', 'librarian'] },
+  { to: '/transactions', icon: ArrowLeftRight, label: 'Transactions', roles: ['librarian'] },
+  { to: '/reservations', icon: CalendarCheck, label: 'Reservations', roles: ['librarian'] },
+  { to: '/fines', icon: AlertCircle, label: 'Fines', roles: ['librarian'] },
+  { to: '/reports', icon: BarChart2, label: 'Reports', roles: ['admin'] },
+  { to: '/settings', icon: Settings, label: 'Settings', roles: ['admin'] },
 ];
 
 export default function DashboardLayout() {
@@ -39,8 +39,8 @@ export default function DashboardLayout() {
     ? user.email.slice(0, 2).toUpperCase()
     : 'LT';
   const displayName = user?.email?.split('@')[0] ?? 'User';
-  const roleLabel = user?.role === 'admin' ? 'Administrator' : user?.role === 'librarian' ? 'Librarian' : 'Staff';
-  const visibleNavItems = navItems.filter((item) => !item.adminOnly || user?.role === 'admin');
+  const roleLabel = user?.role === 'admin' ? 'Platform Admin' : user?.role === 'librarian' ? 'Library Operations' : 'Staff';
+  const visibleNavItems = navItems.filter((item) => item.roles.includes(user?.role ?? 'librarian'));
 
   const renderNavLinks = (showLabels: boolean, onNavigate?: () => void) =>
     visibleNavItems.map(({ to, icon: Icon, label }) => (

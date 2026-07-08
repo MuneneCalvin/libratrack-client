@@ -1,13 +1,18 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { booksService, type Book } from '@/services/books.service';
+import { transactionsService } from '@/services/transactions.service';
 import { QUERY_KEYS } from '@/lib/constants';
 import { formatLanguageCodes, formatPopularity, formatRating } from '@/lib/bookMetadata';
+import { formatDate } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowLeft, Pencil, BookOpen, Star, Tags, Languages, Library, Image as ImageIcon } from 'lucide-react';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import PageBackButton from '@/components/PageBackButton';
+import { MemberAvatar } from '@/components/CatalogVisuals';
+import { Pencil, BookOpen, Star, Tags, Languages, Library, Image as ImageIcon, ChevronRight, History } from 'lucide-react';
 
 export default function BookDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -15,6 +20,12 @@ export default function BookDetailPage() {
   const { data, isLoading } = useQuery({
     queryKey: QUERY_KEYS.book(Number(id)),
     queryFn: () => booksService.getById(Number(id)),
+  });
+  const bookId = Number(id);
+  const borrowerHistory = useQuery({
+    queryKey: [...QUERY_KEYS.transactions, 'book-preview', bookId],
+    queryFn: () => transactionsService.getAll({ bookId, limit: 5 }),
+    enabled: Number.isFinite(bookId) && bookId > 0,
   });
 
   if (isLoading) {
@@ -39,9 +50,7 @@ export default function BookDetailPage() {
     <div className="w-full space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <Button variant="ghost" size="sm" onClick={() => navigate('/books')} className="-ml-2 mb-2 gap-2">
-            <ArrowLeft size={14} /> Back to books
-          </Button>
+          <PageBackButton label="Back to books" onClick={() => navigate('/books')} />
           <h1 className="text-2xl font-bold text-text-primary">{book.title}</h1>
           <p className="text-text-secondary text-sm mt-0.5">{book.author}</p>
         </div>
@@ -51,21 +60,74 @@ export default function BookDetailPage() {
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1.4fr)_22rem] gap-6">
-        {/* Details card */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Book Details</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3 text-sm">
-            <Row label="ISBN" value={book.isbn} />
-            <Row label="Category" value={<Badge variant="secondary">{book.categoryName}</Badge>} />
-            <Row label="Publisher" value={book.publisher ?? '—'} />
-            <Row label="Published Year" value={book.publishedYear ?? '—'} />
-            <Row label="Languages" value={formatLanguageCodes(book.languageCodes)} />
-            <Row label="Editions" value={book.editionCount ? `${book.editionCount}` : 'Not listed'} />
-            <Row label="Open Library Work" value={book.openLibraryWorkKey ?? '—'} />
-          </CardContent>
-        </Card>
+        <div className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Book Details</CardTitle>
+            </CardHeader>
+            <CardContent className="grid gap-x-8 gap-y-1 text-sm md:grid-cols-2">
+              <Row label="ISBN" value={book.isbn} />
+              <Row label="Category" value={<Badge variant="secondary">{book.categoryName}</Badge>} />
+              <Row label="Publisher" value={book.publisher ?? '—'} />
+              <Row label="Published Year" value={book.publishedYear ?? '—'} />
+              <Row label="Languages" value={formatLanguageCodes(book.languageCodes)} />
+              <Row label="Editions" value={book.editionCount ? `${book.editionCount}` : 'Not listed'} />
+              <Row label="Open Library Work" value={book.openLibraryWorkKey ?? '—'} />
+            </CardContent>
+          </Card>
+
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+            <InfoTile icon={Star} label="Rating" value={formatRating(book)} />
+            <InfoTile icon={Library} label="Popularity" value={formatPopularity(book)} />
+            <InfoTile icon={Languages} label="Languages" value={formatLanguageCodes(book.languageCodes)} />
+          </div>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2">
+                <Tags size={16} className="text-accent" /> Discovery Metadata
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-5">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-text-secondary mb-2">Synopsis</p>
+                {book.synopsis ? (
+                  <p className="text-sm leading-6 text-text-primary">{book.synopsis}</p>
+                ) : (
+                  <p className="text-sm text-text-secondary">No synopsis is available from Open Library for this edition.</p>
+                )}
+              </div>
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-text-secondary mb-2">Subjects</p>
+                {visibleSubjects.length > 0 ? (
+                  <div className="flex flex-wrap gap-2">
+                    {visibleSubjects.map((subject) => (
+                      <Badge key={subject} variant="secondary">{subject}</Badge>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-text-secondary">No subjects are listed.</p>
+                )}
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
+                <MetadataBox label="Rating average" value={book.ratingAverage ? `${book.ratingAverage.toFixed(2)} / 5` : 'Not rated'} />
+                <MetadataBox label="Rating count" value={`${book.ratingCount ?? 0}`} />
+                <MetadataBox label="Want to read" value={`${book.wantToReadCount ?? 0}`} />
+                <MetadataBox label="Currently reading" value={`${book.currentlyReadingCount ?? 0}`} />
+                <MetadataBox label="Already read" value={`${book.alreadyReadCount ?? 0}`} />
+                <MetadataBox label="Edition count" value={`${book.editionCount ?? 0}`} />
+              </div>
+            </CardContent>
+          </Card>
+
+          <BorrowerHistoryPreview
+            rows={(borrowerHistory.data?.data as { data?: BookBorrowerRow[] })?.data ?? []}
+            total={(borrowerHistory.data?.data as { meta?: { total?: number } })?.meta?.total}
+            isLoading={borrowerHistory.isLoading}
+            onViewAll={() => navigate(`/transactions/books/${book.id}`)}
+            onViewMember={(memberId) => navigate(`/transactions/members/${memberId}`)}
+          />
+        </div>
 
         <div className="space-y-4">
           <Card>
@@ -110,50 +172,6 @@ export default function BookDetailPage() {
           </Card>
         </div>
       </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <InfoTile icon={Star} label="Rating" value={formatRating(book)} />
-        <InfoTile icon={Library} label="Popularity" value={formatPopularity(book)} />
-        <InfoTile icon={Languages} label="Languages" value={formatLanguageCodes(book.languageCodes)} />
-      </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base flex items-center gap-2">
-            <Tags size={16} className="text-accent" /> Discovery Metadata
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-5">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-text-secondary mb-2">Synopsis</p>
-            {book.synopsis ? (
-              <p className="text-sm leading-6 text-text-primary">{book.synopsis}</p>
-            ) : (
-              <p className="text-sm text-text-secondary">No synopsis is available from Open Library for this edition.</p>
-            )}
-          </div>
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-text-secondary mb-2">Subjects</p>
-            {visibleSubjects.length > 0 ? (
-              <div className="flex flex-wrap gap-2">
-                {visibleSubjects.map((subject) => (
-                  <Badge key={subject} variant="secondary">{subject}</Badge>
-                ))}
-              </div>
-            ) : (
-              <p className="text-sm text-text-secondary">No subjects are listed.</p>
-            )}
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
-            <MetadataBox label="Rating average" value={book.ratingAverage ? `${book.ratingAverage.toFixed(2)} / 5` : 'Not rated'} />
-            <MetadataBox label="Rating count" value={`${book.ratingCount ?? 0}`} />
-            <MetadataBox label="Want to read" value={`${book.wantToReadCount ?? 0}`} />
-            <MetadataBox label="Currently reading" value={`${book.currentlyReadingCount ?? 0}`} />
-            <MetadataBox label="Already read" value={`${book.alreadyReadCount ?? 0}`} />
-            <MetadataBox label="Edition count" value={`${book.editionCount ?? 0}`} />
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 }
@@ -190,4 +208,100 @@ function InfoTile({ icon: Icon, label, value }: { icon: React.ComponentType<{ si
       </CardContent>
     </Card>
   );
+}
+
+function BorrowerHistoryPreview({
+  rows,
+  total,
+  isLoading,
+  onViewAll,
+  onViewMember,
+}: {
+  rows: BookBorrowerRow[];
+  total?: number;
+  isLoading?: boolean;
+  onViewAll: () => void;
+  onViewMember: (memberId: number) => void;
+}) {
+  return (
+    <Card>
+      <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <History size={16} className="text-accent" /> Borrower History
+          </CardTitle>
+          <p className="mt-1 text-sm text-text-secondary">
+            {typeof total === 'number' ? `${total} recorded borrow${total === 1 ? '' : 's'} for this title.` : 'Recent borrowing activity for this title.'}
+          </p>
+        </div>
+        <Button variant="outline" size="sm" onClick={onViewAll} className="w-full gap-2 sm:w-auto">
+          View all <ChevronRight size={14} />
+        </Button>
+      </CardHeader>
+      <CardContent>
+        {isLoading ? (
+          <div className="space-y-2">
+            {Array.from({ length: 4 }).map((_, index) => (
+              <Skeleton key={index} className="h-12 w-full" />
+            ))}
+          </div>
+        ) : rows.length === 0 ? (
+          <div className="rounded-md border border-dashed border-border bg-surface-hover/30 p-6 text-center text-sm text-text-secondary">
+            No borrowing history has been recorded for this book yet.
+          </div>
+        ) : (
+          <div className="overflow-hidden rounded-md border border-border">
+            <Table>
+              <TableHeader>
+                <TableRow className="border-white/10 bg-primary hover:bg-primary">
+                  <TableHead className="text-xs font-semibold uppercase tracking-wide text-white/80">Member</TableHead>
+                  <TableHead className="text-xs font-semibold uppercase tracking-wide text-white/80">Borrowed</TableHead>
+                  <TableHead className="text-xs font-semibold uppercase tracking-wide text-white/80">Due / returned</TableHead>
+                  <TableHead className="text-xs font-semibold uppercase tracking-wide text-white/80">Status</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {rows.map((row) => (
+                  <TableRow key={row.id} className="hover:bg-accent/5">
+                    <TableCell>
+                      <button
+                        type="button"
+                        onClick={() => row.memberId && onViewMember(row.memberId)}
+                        disabled={!row.memberId}
+                        className="group flex items-center gap-3 text-left disabled:pointer-events-none"
+                      >
+                        <MemberAvatar name={row.memberName} className="size-9" />
+                        <span className="font-medium text-text-primary underline-offset-4 group-hover:text-accent group-hover:underline">
+                          {row.memberName}
+                        </span>
+                      </button>
+                    </TableCell>
+                    <TableCell className="text-text-secondary">{formatDate(row.borrowedAt)}</TableCell>
+                    <TableCell className="text-text-secondary">
+                      {row.returnedAt ? `Returned ${formatDate(row.returnedAt)}` : `Due ${formatDate(row.dueDate)}`}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={row.status === 'OVERDUE' ? 'destructive' : row.status === 'RETURNED' ? 'secondary' : 'default'}>
+                        {row.status}
+                      </Badge>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+interface BookBorrowerRow {
+  id: number;
+  memberId?: number;
+  memberName: string;
+  borrowedAt: string;
+  dueDate: string;
+  returnedAt?: string | null;
+  status: string;
 }

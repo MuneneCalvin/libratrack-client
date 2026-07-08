@@ -13,6 +13,9 @@ import { formatDate, formatCurrency } from '@/lib/utils';
 import { useAuthStore } from '@/store/auth.store';
 import { toast } from 'sonner';
 import { MemberAvatar } from '@/components/CatalogVisuals';
+import ConfirmDialog from '@/components/ConfirmDialog';
+import { TableActionButton, TableActionGroup } from '@/components/TableActions';
+import { BadgeCheck, Search, ShieldOff } from 'lucide-react';
 
 interface FineRow {
   id: number;
@@ -26,21 +29,29 @@ interface FineRow {
 
 export default function FinesPage() {
   const [page, setPage] = useState(1);
-  const [isPaid, setIsPaid] = useState('');
+  const [status, setStatus] = useState('');
+  const [q, setQ] = useState('');
+  const [payFine, setPayFine] = useState<FineRow | null>(null);
   const [waiveId, setWaiveId] = useState<number | null>(null);
   const [waiveNote, setWaiveNote] = useState('');
   const queryClient = useQueryClient();
   const { user } = useAuthStore();
 
   const { data, isLoading } = useQuery({
-    queryKey: [...QUERY_KEYS.fines, page, isPaid],
-    queryFn: () => finesService.getAll({ page, limit: 20, isPaid: isPaid || undefined }),
+    queryKey: [...QUERY_KEYS.fines, page, status, q],
+    queryFn: () => finesService.getAll({
+      page,
+      limit: 20,
+      status: status || undefined,
+      q: q.trim() || undefined,
+    }),
   });
 
   const payMutation = useMutation({
     mutationFn: finesService.markPaid,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.fines });
+      setPayFine(null);
       toast.success('Fine marked as paid');
     },
     onError: () => {
@@ -81,26 +92,65 @@ export default function FinesPage() {
     )},
     { key: 'actions', header: '', render: (f: FineRow) => (
       !f.isPaid && !f.isWaived ? (
-        <div className="flex gap-2 justify-end">
-          <Button variant="ghost" size="sm" onClick={() => payMutation.mutate(f.id)}>Mark Paid</Button>
-          {user?.role === 'admin' && <Button variant="ghost" size="sm" className="text-warning" onClick={() => setWaiveId(f.id)}>Waive</Button>}
-        </div>
+        <TableActionGroup>
+          <TableActionButton
+            label="Mark paid"
+            icon={BadgeCheck}
+            tone="success"
+            disabled={payMutation.isPending}
+            onClick={() => setPayFine(f)}
+          />
+          {user?.role === 'admin' && (
+            <TableActionButton
+              label="Waive"
+              icon={ShieldOff}
+              tone="warning"
+              disabled={waiveMutation.isPending}
+              onClick={() => setWaiveId(f.id)}
+            />
+          )}
+        </TableActionGroup>
       ) : null
     )},
   ];
 
   return (
-    <div className="space-y-4">
-      <h1 className="text-2xl font-bold text-text-primary">Fines</h1>
-      <Select value={isPaid} onValueChange={(v) => { setIsPaid(v === 'ALL' ? '' : v); setPage(1); }}>
-        <SelectTrigger className="w-full sm:w-40"><SelectValue placeholder="All fines" /></SelectTrigger>
-        <SelectContent>
-          <SelectItem value="ALL">All</SelectItem>
-          <SelectItem value="false">Unpaid</SelectItem>
-          <SelectItem value="true">Paid</SelectItem>
-        </SelectContent>
-      </Select>
+    <div className="space-y-5">
+      <div>
+        <h1 className="text-2xl font-bold text-text-primary">Fines</h1>
+        <p className="mt-1 text-sm text-text-secondary">Search by member and filter payment status.</p>
+      </div>
+      <div className="grid grid-cols-1 gap-3 rounded-md border border-border bg-surface p-3 lg:grid-cols-[minmax(16rem,1fr)_13rem]">
+        <div className="relative">
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-secondary" />
+          <Input
+            className="pl-9"
+            placeholder="Search by member name or fine reason..."
+            value={q}
+            onChange={(event) => { setQ(event.target.value); setPage(1); }}
+          />
+        </div>
+        <Select value={status || 'ALL'} onValueChange={(v) => { setStatus(v === 'ALL' ? '' : v); setPage(1); }}>
+          <SelectTrigger className="w-full"><SelectValue placeholder="All fines" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="ALL">All fines</SelectItem>
+            <SelectItem value="UNPAID">Unpaid</SelectItem>
+            <SelectItem value="PAID">Paid</SelectItem>
+            <SelectItem value="WAIVED">Waived</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
       <DataTable columns={columns} data={rows} isLoading={isLoading} page={page} totalPages={totalPages} onPageChange={setPage} />
+      <ConfirmDialog
+        open={!!payFine}
+        title="Mark fine as paid?"
+        description={payFine ? `${payFine.memberName}'s ${formatCurrency(Number(payFine.amount))} fine will be recorded as paid and removed from outstanding balances.` : ''}
+        confirmLabel="Mark paid"
+        tone="success"
+        isPending={payMutation.isPending}
+        onOpenChange={(open) => !open && setPayFine(null)}
+        onConfirm={() => payFine && payMutation.mutate(payFine.id)}
+      />
 
       <Dialog open={!!waiveId} onOpenChange={() => setWaiveId(null)}>
         <DialogContent>

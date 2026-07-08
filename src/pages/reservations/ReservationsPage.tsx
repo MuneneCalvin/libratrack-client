@@ -3,7 +3,6 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { reservationsService } from '@/services/reservations.service';
 import { QUERY_KEYS } from '@/lib/constants';
 import DataTable from '@/components/DataTable';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -12,6 +11,8 @@ import { formatDate } from '@/lib/utils';
 import { CheckCircle, XCircle, BookOpen, Search, Clock3, CheckCircle2, TimerReset } from 'lucide-react';
 import { toast } from 'sonner';
 import { BookThumb, MemberAvatar } from '@/components/CatalogVisuals';
+import ConfirmDialog from '@/components/ConfirmDialog';
+import { TableActionButton, TableActionGroup } from '@/components/TableActions';
 
 interface Reservation {
   id: number;
@@ -30,10 +31,13 @@ const statusVariant: Record<string, 'default' | 'secondary' | 'destructive'> = {
   PENDING: 'default', FULFILLED: 'secondary', CANCELLED: 'secondary', EXPIRED: 'destructive',
 };
 
+type ReservationAction = { type: 'approve' | 'decline'; reservation: Reservation };
+
 export default function ReservationsPage() {
   const [page, setPage] = useState(1);
   const [status, setStatus] = useState('');
   const [q, setQ] = useState('');
+  const [pendingAction, setPendingAction] = useState<ReservationAction | null>(null);
   const queryClient = useQueryClient();
 
   const { data, isLoading } = useQuery({
@@ -45,6 +49,7 @@ export default function ReservationsPage() {
     mutationFn: reservationsService.cancel,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.reservations });
+      setPendingAction(null);
       toast.success('Reservation declined');
     },
     onError: () => {
@@ -56,6 +61,7 @@ export default function ReservationsPage() {
     mutationFn: reservationsService.fulfill,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.reservations });
+      setPendingAction(null);
       toast.success('Reservation approved');
     },
     onError: () => {
@@ -77,6 +83,7 @@ export default function ReservationsPage() {
   const pendingCount = reservations.filter((reservation) => reservation.status === 'PENDING').length;
   const fulfilledCount = reservations.filter((reservation) => reservation.status === 'FULFILLED').length;
   const closedCount = reservations.filter((reservation) => reservation.status === 'CANCELLED' || reservation.status === 'EXPIRED').length;
+  const confirmCopy = getReservationConfirmCopy(pendingAction);
 
   const columns = [
     {
@@ -120,26 +127,22 @@ export default function ReservationsPage() {
       header: '',
       render: (reservation: Reservation) => (
         reservation.status === 'PENDING' ? (
-          <div className="flex justify-end gap-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-success"
+          <TableActionGroup>
+            <TableActionButton
+              label="Approve"
+              icon={CheckCircle}
+              tone="success"
               disabled={isPending}
-              onClick={() => fulfillMutation.mutate(reservation.id)}
-            >
-              <CheckCircle size={14} /> Approve
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-danger"
+              onClick={() => setPendingAction({ type: 'approve', reservation })}
+            />
+            <TableActionButton
+              label="Decline"
+              icon={XCircle}
+              tone="danger"
               disabled={isPending}
-              onClick={() => cancelMutation.mutate(reservation.id)}
-            >
-              <XCircle size={14} /> Decline
-            </Button>
-          </div>
+              onClick={() => setPendingAction({ type: 'decline', reservation })}
+            />
+          </TableActionGroup>
         ) : null
       ),
     },
@@ -188,8 +191,46 @@ export default function ReservationsPage() {
         onPageChange={setPage}
         emptyMessage="No reservations match your filters."
       />
+      <ConfirmDialog
+        open={!!pendingAction}
+        title={confirmCopy.title}
+        description={confirmCopy.description}
+        confirmLabel={confirmCopy.confirmLabel}
+        tone={confirmCopy.tone}
+        isPending={isPending}
+        onOpenChange={(open) => !open && setPendingAction(null)}
+        onConfirm={() => {
+          if (!pendingAction) return;
+          if (pendingAction.type === 'approve') fulfillMutation.mutate(pendingAction.reservation.id);
+          else cancelMutation.mutate(pendingAction.reservation.id);
+        }}
+      />
     </div>
   );
+}
+
+function getReservationConfirmCopy(action: ReservationAction | null): {
+  title: string;
+  description: string;
+  confirmLabel: string;
+  tone: 'danger' | 'warning' | 'success';
+} {
+  if (!action) return { title: '', description: '', confirmLabel: '', tone: 'warning' };
+  const { reservation } = action;
+  if (action.type === 'approve') {
+    return {
+      title: 'Approve reservation?',
+      description: `${reservation.memberName}'s reservation for "${reservation.bookTitle}" will be marked as fulfilled.`,
+      confirmLabel: 'Approve',
+      tone: 'success',
+    };
+  }
+  return {
+    title: 'Decline reservation?',
+    description: `${reservation.memberName}'s reservation for "${reservation.bookTitle}" will be cancelled and closed.`,
+    confirmLabel: 'Decline',
+    tone: 'danger',
+  };
 }
 
 function MetricCard({ icon: Icon, label, value }: { icon: React.ElementType; label: string; value: React.ReactNode }) {

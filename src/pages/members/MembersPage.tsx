@@ -14,11 +14,19 @@ import { formatDate } from '@/lib/utils';
 import AddMemberModal from '@/components/modals/AddMemberModal';
 import { toast } from 'sonner';
 import { MemberAvatar } from '@/components/CatalogVisuals';
+import ConfirmDialog from '@/components/ConfirmDialog';
+import { TableActionButton, TableActionGroup } from '@/components/TableActions';
+
+type MemberAction =
+  | { type: 'delete'; member: Member }
+  | { type: 'revoke'; member: Member }
+  | { type: 'restore'; member: Member };
 
 export default function MembersPage() {
   const [page, setPage] = useState(1);
   const [q, setQ] = useState('');
   const [addOpen, setAddOpen] = useState(false);
+  const [pendingAction, setPendingAction] = useState<MemberAction | null>(null);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { user } = useAuthStore();
@@ -32,6 +40,7 @@ export default function MembersPage() {
     mutationFn: membersService.remove,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.members });
+      setPendingAction(null);
       toast.success('Member deleted');
     },
     onError: () => {
@@ -42,6 +51,7 @@ export default function MembersPage() {
     mutationFn: (member: Member) => membersService.update(member.id, { isActive: !member.isActive }),
     onSuccess: (_, member) => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.members });
+      setPendingAction(null);
       toast.success(member.isActive ? 'Member access revoked' : 'Member access restored', {
         description: member.fullName,
       });
@@ -54,6 +64,9 @@ export default function MembersPage() {
   const members = (data?.data as { data?: Member[] })?.data ?? [];
   const meta = (data?.data as { meta?: { totalPages?: number; total?: number } })?.meta;
   const activeCount = members.filter((member) => member.isActive).length;
+  const isAdmin = user?.role === 'admin';
+  const isLibrarian = user?.role === 'librarian';
+  const confirmCopy = getConfirmCopy(pendingAction);
 
   const columns = [
     { key: 'name', header: 'Name', sortValue: (m: Member) => m.fullName, render: (m: Member) => (
@@ -73,29 +86,41 @@ export default function MembersPage() {
       <Badge variant={m.isActive ? 'default' : 'secondary'}>{m.isActive ? 'Active' : 'Inactive'}</Badge>
     )},
     { key: 'actions', header: '', render: (m: Member) => (
-      <div className="flex gap-2 justify-end">
-        <Button variant="ghost" size="icon" onClick={() => navigate(`/members/${m.id}`)}><Eye size={15} /></Button>
-        <Button
-          variant="ghost"
-          size="sm"
-          className={m.isActive ? 'text-danger' : 'text-success'}
-          onClick={() => toggleMutation.mutate(m)}
-          disabled={toggleMutation.isPending}
-        >
-          {m.isActive ? 'Revoke' : 'Restore'}
-        </Button>
-        {user?.role === 'admin' && (
-          <Button variant="ghost" size="icon" className="text-danger" onClick={() => { if (confirm('Delete member?')) deleteMutation.mutate(m.id); }}>
-            <Trash2 size={15} />
-          </Button>
+      <TableActionGroup>
+        <TableActionButton label="View" icon={Eye} iconOnly onClick={() => navigate(`/members/${m.id}`)} />
+        {isLibrarian && (
+          <TableActionButton
+            label={m.isActive ? 'Revoke' : 'Restore'}
+            icon={m.isActive ? UserX : UserCheck}
+            tone={m.isActive ? 'danger' : 'success'}
+            onClick={() => setPendingAction({ type: m.isActive ? 'revoke' : 'restore', member: m })}
+            disabled={toggleMutation.isPending}
+          />
         )}
-      </div>
+        {isAdmin && (
+          <TableActionButton label="Delete" icon={Trash2} tone="danger" iconOnly onClick={() => setPendingAction({ type: 'delete', member: m })} />
+        )}
+      </TableActionGroup>
     )},
   ];
 
   return (
     <>
     <AddMemberModal open={addOpen} onClose={() => setAddOpen(false)} />
+    <ConfirmDialog
+      open={!!pendingAction}
+      title={confirmCopy.title}
+      description={confirmCopy.description}
+      confirmLabel={confirmCopy.confirmLabel}
+      tone={confirmCopy.tone}
+      isPending={deleteMutation.isPending || toggleMutation.isPending}
+      onOpenChange={(open) => !open && setPendingAction(null)}
+      onConfirm={() => {
+        if (!pendingAction) return;
+        if (pendingAction.type === 'delete') deleteMutation.mutate(pendingAction.member.id);
+        else toggleMutation.mutate(pendingAction.member);
+      }}
+    />
     <div className="w-full space-y-5">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
@@ -130,6 +155,42 @@ export default function MembersPage() {
     </div>
     </>
   );
+}
+
+function getConfirmCopy(action: MemberAction | null): {
+  title: string;
+  description: string;
+  confirmLabel: string;
+  tone: 'danger' | 'warning' | 'success';
+} {
+  if (!action) {
+    return { title: '', description: '', confirmLabel: '', tone: 'warning' };
+  }
+
+  if (action.type === 'delete') {
+    return {
+      title: 'Delete member account?',
+      description: `${action.member.fullName} and their member activity will be permanently removed from the system. This action cannot be undone.`,
+      confirmLabel: 'Delete member',
+      tone: 'danger',
+    };
+  }
+
+  if (action.type === 'restore') {
+    return {
+      title: 'Restore member access?',
+      description: `${action.member.fullName} will be able to sign in, browse books, and reserve available titles again.`,
+      confirmLabel: 'Restore access',
+      tone: 'success',
+    };
+  }
+
+  return {
+    title: 'Revoke member access?',
+    description: `${action.member.fullName} will no longer be able to sign in or reserve books until access is restored.`,
+    confirmLabel: 'Revoke access',
+    tone: 'warning',
+  };
 }
 
 function MetricCard({ icon: Icon, label, value }: { icon: React.ComponentType<{ size?: number; className?: string }>; label: string; value: React.ReactNode }) {

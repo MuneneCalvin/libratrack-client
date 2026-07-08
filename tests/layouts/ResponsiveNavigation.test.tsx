@@ -6,10 +6,10 @@ import DashboardLayout from '@/layouts/DashboardLayout';
 import PortalLayout from '@/layouts/PortalLayout';
 import { useAuthStore } from '@/store/auth.store';
 
-function renderDashboardLayout() {
+function renderDashboardLayout(role: 'admin' | 'librarian' = 'librarian') {
   const queryClient = new QueryClient();
   useAuthStore.getState().setAuth(
-    { id: 1, email: 'librarian@test.com', role: 'librarian' },
+    { id: 1, email: `${role}@test.com`, role },
     'token',
   );
 
@@ -56,6 +56,34 @@ describe('responsive navigation layouts', () => {
 
     expect(screen.getByRole('button', { name: 'Open staff navigation' })).toBeInTheDocument();
     expect(screen.getByText('Dashboard content')).toBeInTheDocument();
+  });
+
+  it('shows role-specific staff navigation', () => {
+    const { rerender } = renderDashboardLayout('admin');
+
+    expect(screen.getByText('Reports')).toBeInTheDocument();
+    expect(screen.getByText('Settings')).toBeInTheDocument();
+    expect(screen.queryByText('Transactions')).not.toBeInTheDocument();
+
+    useAuthStore.getState().setAuth(
+      { id: 1, email: 'librarian@test.com', role: 'librarian' },
+      'token',
+    );
+    rerender(
+      <QueryClientProvider client={new QueryClient()}>
+        <MemoryRouter initialEntries={['/dashboard']}>
+          <Routes>
+            <Route path="/" element={<DashboardLayout />}>
+              <Route path="dashboard" element={<div>Dashboard content</div>} />
+            </Route>
+          </Routes>
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+
+    expect(screen.getByText('Transactions')).toBeInTheDocument();
+    expect(screen.getByText('Reservations')).toBeInTheDocument();
+    expect(screen.queryByText('Settings')).not.toBeInTheDocument();
   });
 
   it('exposes a mobile member navigation drawer trigger', () => {

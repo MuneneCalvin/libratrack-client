@@ -7,7 +7,7 @@ import StatsCard from '@/components/StatsCard';
 import { useAuthStore } from '@/store/auth.store';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { BookOpen, Users, ArrowLeftRight, AlertCircle, DollarSign, CalendarCheck, Boxes, Star } from 'lucide-react';
+import { BookOpen, Users, ArrowLeftRight, AlertCircle, DollarSign, CalendarCheck, Boxes, Star, BarChart2, Settings } from 'lucide-react';
 import { formatDate, formatCurrency } from '@/lib/utils';
 
 function getGreeting() {
@@ -21,10 +21,16 @@ function formatToday() {
   return new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 }
 
-const quickActions = [
-  { label: 'Borrow a Book', description: 'Record a new borrow transaction', icon: ArrowLeftRight, to: '/transactions/borrow' },
-  { label: 'Add Member', description: 'Register a new library member', icon: Users, to: '/members/new' },
-  { label: 'View Overdue', description: 'See all overdue transactions', icon: AlertCircle, to: '/transactions' },
+const adminQuickActions = [
+  { label: 'Review Reports', description: 'Monitor inventory, borrowing, fines, and member activity', icon: BarChart2, to: '/reports' },
+  { label: 'Manage Settings', description: 'Configure lending limits, due dates, and fine policies', icon: Settings, to: '/settings' },
+  { label: 'Audit Members', description: 'Review accounts and permanently remove test records', icon: Users, to: '/members' },
+];
+
+const librarianQuickActions = [
+  { label: 'Borrow a Book', description: 'Record a new borrow transaction', icon: ArrowLeftRight, to: '/transactions?action=borrow' },
+  { label: 'Process Return', description: 'Close active borrows and refresh copy availability', icon: BookOpen, to: '/transactions?action=return' },
+  { label: 'View Overdue', description: 'Follow up on overdue transactions and member fines', icon: AlertCircle, to: '/transactions' },
 ];
 
 export default function DashboardPage() {
@@ -52,6 +58,10 @@ export default function DashboardPage() {
 
   const displayName = user?.email?.split('@')[0] ?? 'there';
   const roleLabel = user?.role === 'admin' ? 'Administrator' : 'Librarian';
+  const roleFocus = user?.role === 'admin'
+    ? 'Platform controls, reporting, and permanent account cleanup.'
+    : 'Daily lending, returns, reservations, and member access.';
+  const quickActions = user?.role === 'admin' ? adminQuickActions : librarianQuickActions;
   const availableCopies = s?.availableCopies ?? s?.availableBooks ?? '—';
   const borrowedBooks = s?.borrowedBooks ?? s?.activeBorrows ?? '—';
   const reservedBooks = s?.reservedBooks ?? s?.pendingReservations ?? '—';
@@ -64,6 +74,7 @@ export default function DashboardPage() {
           {getGreeting()}, {displayName}!
         </h1>
         <p className="text-text-secondary text-sm mt-1">{formatToday()} · {roleLabel}</p>
+        <p className="mt-2 text-sm text-text-secondary">{roleFocus}</p>
       </div>
 
       {/* Stat cards */}

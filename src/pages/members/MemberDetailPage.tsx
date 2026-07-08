@@ -1,4 +1,5 @@
-import { useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
+import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { membersService } from '@/services/members.service';
 import { transactionsService } from '@/services/transactions.service';
@@ -10,13 +11,21 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatDate, formatCurrency } from '@/lib/utils';
-import { AlertCircle, ArrowLeftRight, CalendarCheck, Mail, MapPin, Phone, UserCheck, UserX } from 'lucide-react';
+import { AlertCircle, ArrowLeftRight, CalendarCheck, Mail, MapPin, Phone, Trash2, UserCheck, UserX } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAuthStore } from '@/store/auth.store';
+import ConfirmDialog from '@/components/ConfirmDialog';
+import PageBackButton from '@/components/PageBackButton';
+
+type DetailAction = 'delete' | 'revoke' | 'restore';
 
 export default function MemberDetailPage() {
   const { id } = useParams<{ id: string }>();
   const memberId = Number(id);
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
+  const { user } = useAuthStore();
+  const [pendingAction, setPendingAction] = useState<DetailAction | null>(null);
 
   const { data: memberData, isLoading } = useQuery({
     queryKey: QUERY_KEYS.member(memberId),
@@ -40,12 +49,25 @@ export default function MemberDetailPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.member(memberId) });
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.members });
+      setPendingAction(null);
       toast.success(member?.isActive ? 'Member access revoked' : 'Member access restored', {
         description: member?.fullName,
       });
     },
     onError: () => {
       toast.error('Failed to update member access');
+    },
+  });
+  const deleteMutation = useMutation({
+    mutationFn: () => membersService.remove(memberId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.members });
+      setPendingAction(null);
+      toast.success('Member deleted', { description: member?.fullName });
+      navigate('/members');
+    },
+    onError: () => {
+      toast.error('Failed to delete member');
     },
   });
 
@@ -78,24 +100,58 @@ export default function MemberDetailPage() {
   const activeBorrows = transactions.filter((t) => t.status === 'ACTIVE');
   const overdueBorrows = transactions.filter((t) => t.status === 'OVERDUE' || new Date(t.dueDate) < new Date());
   const pendingReservations = reservations.filter((r) => r.status === 'PENDING');
+  const isAdmin = user?.role === 'admin';
+  const isLibrarian = user?.role === 'librarian';
+  const confirmCopy = getDetailConfirmCopy(pendingAction, member.fullName);
 
   return (
     <div className="w-full space-y-6">
+      <ConfirmDialog
+        open={!!pendingAction}
+        title={confirmCopy.title}
+        description={confirmCopy.description}
+        confirmLabel={confirmCopy.confirmLabel}
+        tone={confirmCopy.tone}
+        isPending={toggleActive.isPending || deleteMutation.isPending}
+        onOpenChange={(open) => !open && setPendingAction(null)}
+        onConfirm={() => {
+          if (!pendingAction) return;
+          if (pendingAction === 'delete') deleteMutation.mutate();
+          else toggleActive.mutate();
+        }}
+      />
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
+          <PageBackButton label="Back to members" onClick={() => navigate('/members')} />
           <h1 className="text-2xl font-bold text-text-primary">{member.fullName}</h1>
           <p className="text-text-secondary text-sm mt-0.5">{member.membershipNumber}</p>
         </div>
-        <Button
-          variant={member.isActive ? 'outline' : 'default'}
-          size="sm"
-          onClick={() => toggleActive.mutate()}
-          disabled={toggleActive.isPending}
-          className="w-full gap-2 sm:w-auto"
-        >
-          {member.isActive ? <UserX size={14} /> : <UserCheck size={14} />}
-          {member.isActive ? 'Revoke access' : 'Restore access'}
-        </Button>
+        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+          {isLibrarian && (
+            <Button
+              variant={member.isActive ? 'outline' : 'default'}
+              size="sm"
+              onClick={() => setPendingAction(member.isActive ? 'revoke' : 'restore')}
+              disabled={toggleActive.isPending}
+              className="w-full gap-2 sm:w-auto"
+            >
+              {member.isActive ? <UserX size={14} /> : <UserCheck size={14} />}
+              {member.isActive ? 'Revoke access' : 'Restore access'}
+            </Button>
+          )}
+          {isAdmin && (
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={() => setPendingAction('delete')}
+              disabled={deleteMutation.isPending}
+              className="w-full gap-2 sm:w-auto"
+            >
+              <Trash2 size={14} />
+              Delete member
+            </Button>
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -184,6 +240,39 @@ export default function MemberDetailPage() {
       </div>
     </div>
   );
+}
+
+function getDetailConfirmCopy(action: DetailAction | null, memberName: string): {
+  title: string;
+  description: string;
+  confirmLabel: string;
+  tone: 'danger' | 'warning' | 'success';
+} {
+  if (action === 'delete') {
+    return {
+      title: 'Delete member account?',
+      description: `${memberName} and their member activity will be permanently removed from the system. This action cannot be undone.`,
+      confirmLabel: 'Delete member',
+      tone: 'danger',
+    };
+  }
+  if (action === 'restore') {
+    return {
+      title: 'Restore member access?',
+      description: `${memberName} will be able to sign in, browse books, and reserve available titles again.`,
+      confirmLabel: 'Restore access',
+      tone: 'success',
+    };
+  }
+  if (action === 'revoke') {
+    return {
+      title: 'Revoke member access?',
+      description: `${memberName} will no longer be able to sign in or reserve books until access is restored.`,
+      confirmLabel: 'Revoke access',
+      tone: 'warning',
+    };
+  }
+  return { title: '', description: '', confirmLabel: '', tone: 'warning' };
 }
 
 function MetricCard({ icon: Icon, label, value, tone = 'default' }: { icon: React.ComponentType<{ size?: number; className?: string }>; label: string; value: React.ReactNode; tone?: 'default' | 'danger' }) {

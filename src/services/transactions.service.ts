@@ -6,5 +6,6 @@ export const transactionsService = {
     api.get(`/members/${memberId}/transactions/`, { params }),
   borrow: (memberId: number, bookIds: number[]) =>
     api.post('/transactions/', { memberId, bookIds }),
-  return: (transactionId: number) => api.post(`/transactions/${transactionId}/return/`),
+  return: (transactionId: number, itemIds?: number[]) =>
+    api.post(`/transactions/${transactionId}/return/`, itemIds ? { itemIds } : {}),
 };

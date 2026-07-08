@@ -13,8 +13,7 @@ import MembersPage from '@/pages/members/MembersPage';
 import MemberDetailPage from '@/pages/members/MemberDetailPage';
 import MemberNewPage from '@/pages/members/MemberNewPage';
 import TransactionsPage from '@/pages/transactions/TransactionsPage';
-import BorrowPage from '@/pages/transactions/BorrowPage';
-import ReturnPage from '@/pages/transactions/ReturnPage';
+import TransactionHistoryPage from '@/pages/transactions/TransactionHistoryPage';
 import ReservationsPage from '@/pages/reservations/ReservationsPage';
 import FinesPage from '@/pages/fines/FinesPage';
 import ReportsPage from '@/pages/reports/ReportsPage';
@@ -44,8 +43,10 @@ export default function AppRoutes() {
         <Route path="members/new" element={<MemberNewPage />} />
         <Route path="members/:id" element={<MemberDetailPage />} />
         <Route path="transactions" element={<TransactionsPage />} />
-        <Route path="transactions/borrow" element={<BorrowPage />} />
-        <Route path="transactions/return" element={<ReturnPage />} />
+        <Route path="transactions/members/:memberId" element={<TransactionHistoryPage scope="member" />} />
+        <Route path="transactions/books/:bookId" element={<TransactionHistoryPage scope="book" />} />
+        <Route path="transactions/borrow" element={<Navigate to="/transactions?action=borrow" replace />} />
+        <Route path="transactions/return" element={<Navigate to="/transactions?action=return" replace />} />
         <Route path="reservations" element={<ReservationsPage />} />
         <Route path="fines" element={<FinesPage />} />
         <Route path="reports" element={<ReportsPage />} />
