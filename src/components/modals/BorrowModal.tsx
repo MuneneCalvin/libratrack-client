@@ -15,6 +15,7 @@ import { Badge } from '@/components/ui/badge';
 import { BookThumb, MemberAvatar } from '@/components/CatalogVisuals';
 import { ArrowDownCircle, CheckCircle2, ChevronsUpDown, Search, X } from 'lucide-react';
 import { toast } from 'sonner';
+import { maxBooksPerMember } from '@/lib/settingsContract';
 
 interface Props {
   open: boolean;
@@ -65,8 +66,8 @@ export default function BorrowModal({ open, onClose }: Props) {
     enabled: open && !!selectedMember,
   });
 
-  const settings = unwrapData<Record<string, string>>(settingsData?.data);
-  const maxBooks = Number(settings?.max_books_per_member ?? 0);
+  const settings = unwrapData<Record<string, unknown>>(settingsData?.data);
+  const maxBooks = maxBooksPerMember(settings);
   const hasBorrowLimit = Number.isFinite(maxBooks) && maxBooks > 0;
   const memberTransactions = unwrapData<BorrowTransaction[]>(memberTransactionsData?.data) ?? [];
   const currentBorrowedCount = memberTransactions

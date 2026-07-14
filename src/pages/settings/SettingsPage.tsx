@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Settings2, Clock, BookOpen, Users, CalendarDays, Save, ShieldCheck } from 'lucide-react';
 import { toast } from 'sonner';
+import { normalizeSettings, settingsToApiPayload } from '@/lib/settingsContract';
 
 interface Setting {
   key: string;
@@ -36,15 +37,15 @@ export default function SettingsPage() {
   });
 
   useEffect(() => {
-    const settings = unwrapData<Record<string, string>>(data?.data);
+    const settings = unwrapData<Record<string, unknown>>(data?.data);
     if (settings && typeof settings === 'object' && !Array.isArray(settings)) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
-      setValues(settings);
+      setValues(normalizeSettings(settings));
     }
   }, [data]);
 
   const mutation = useMutation({
-    mutationFn: () => api.put('/settings/', values),
+    mutationFn: () => api.put('/settings/', settingsToApiPayload(values)),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.settings });
       setSaved(true);
