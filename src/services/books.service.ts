@@ -35,7 +35,7 @@ export const booksService = {
     api.get<{ data: Book[]; meta: { page: number; limit: number; total: number; totalPages: number } }>('/books/', { params }),
   getById: (id: number) => api.get<{ data: Book }>(`/books/${id}/`),
   create: (data: Omit<Book, 'id' | 'availableCopies' | 'categoryName'>) =>
-    api.post<{ data: Book }>('/books/', data),
+    api.post<{ data: Book }>('/books/', { ...data, availableCopies: data.totalCopies }),
   update: (id: number, data: Partial<Book>) => api.patch<{ data: Book }>(`/books/${id}/`, data),
   remove: (id: number) => api.delete(`/books/${id}/`),
   getCategories: (params?: Record<string, unknown>) =>

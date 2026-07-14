@@ -16,7 +16,7 @@ export const membersService = {
     api.get<{ data: Member[]; meta: object }>('/members/', { params }),
   getById: (id: number) => api.get<{ data: Member }>(`/members/${id}/`),
   create: (data: { email: string; password: string; fullName: string; phone?: string; address?: string }) =>
-    api.post<{ data: { member: Member } }>('/members/', data),
+    api.post<{ data: Member }>('/members/', data),
   update: (id: number, data: Partial<Member & { isActive: boolean }>) =>
     api.patch<{ data: Member }>(`/members/${id}/`, data),
   remove: (id: number) => api.delete(`/members/${id}/`),

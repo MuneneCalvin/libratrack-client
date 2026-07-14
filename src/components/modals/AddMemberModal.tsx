@@ -36,7 +36,7 @@ export default function AddMemberModal({ open, onClose }: Props) {
     }),
     onSuccess: (res) => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.members });
-      const member = (res?.data as { data?: { member?: { membershipNumber?: string } } })?.data?.member;
+      const member = unwrapCreatedMember(res?.data);
       setSuccess({ membershipNumber: member?.membershipNumber ?? '' });
       toast.success('Member created');
     },
@@ -142,4 +142,16 @@ export default function AddMemberModal({ open, onClose }: Props) {
       </DialogContent>
     </Dialog>
   );
+}
+
+function unwrapCreatedMember(payload: unknown): { membershipNumber?: string } | undefined {
+  const data = payload && typeof payload === 'object' && 'data' in payload
+    ? (payload as { data?: unknown }).data
+    : payload;
+
+  if (data && typeof data === 'object' && 'member' in data) {
+    return (data as { member?: { membershipNumber?: string } }).member;
+  }
+
+  return data as { membershipNumber?: string } | undefined;
 }
