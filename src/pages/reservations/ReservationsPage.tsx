@@ -54,6 +54,7 @@ export default function ReservationsPage() {
     mutationFn: reservationsService.cancel,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.reservations });
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.books });
       setPendingAction(null);
       toast.success('Reservation cancelled');
     },
@@ -66,6 +67,7 @@ export default function ReservationsPage() {
     mutationFn: reservationsService.approve,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.reservations });
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.books });
       setPendingAction(null);
       toast.success('Reservation approved', {
         description: 'Copy held for pickup until the reservation deadline.',
@@ -96,7 +98,7 @@ export default function ReservationsPage() {
   const filteredReservations = reservations.filter((reservation) => {
     const statusMatch = !status || reservation.status === status;
     if (!needle) return statusMatch;
-    const text = `${reservation.bookTitle} ${reservation.bookAuthor} ${reservation.memberName} ${reservation.status}`.toLowerCase();
+    const text = `${reservation.bookTitle} ${reservation.bookAuthor} ${reservation.memberName} ${reservation.status} ${formatStatus(reservation.status)}`.toLowerCase();
     return statusMatch && text.includes(needle);
   });
   const totalPages = Math.max(1, Math.ceil(filteredReservations.length / 20));
