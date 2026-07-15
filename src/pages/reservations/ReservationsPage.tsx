@@ -29,10 +29,14 @@ interface Reservation {
 }
 
 const statusVariant: Record<string, 'default' | 'secondary' | 'destructive'> = {
-  PENDING: 'default', FULFILLED: 'secondary', CANCELLED: 'secondary', EXPIRED: 'destructive',
+  PENDING: 'default',
+  READY_FOR_PICKUP: 'default',
+  BORROWED: 'secondary',
+  CANCELLED: 'secondary',
+  EXPIRED: 'destructive',
 };
 
-type ReservationAction = { type: 'approve' | 'decline'; reservation: Reservation };
+type ReservationAction = { type: 'approve' | 'issue' | 'decline'; reservation: Reservation };
 
 export default function ReservationsPage() {
   const [page, setPage] = useState(1);
@@ -51,26 +55,42 @@ export default function ReservationsPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.reservations });
       setPendingAction(null);
-      toast.success('Reservation declined');
+      toast.success('Reservation cancelled');
     },
     onError: (error) => {
-      toast.error(getApiErrorMessage(error, 'Failed to decline reservation'));
+      toast.error(getApiErrorMessage(error, 'Failed to cancel reservation'));
     },
   });
 
-  const fulfillMutation = useMutation({
-    mutationFn: reservationsService.fulfill,
+  const approveMutation = useMutation({
+    mutationFn: reservationsService.approve,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.reservations });
       setPendingAction(null);
-      toast.success('Reserved book issued');
+      toast.success('Reservation approved', {
+        description: 'Copy held for pickup until the reservation deadline.',
+      });
+    },
+    onError: (error) => {
+      toast.error(getApiErrorMessage(error, 'Failed to approve reservation'));
+    },
+  });
+
+  const issueMutation = useMutation({
+    mutationFn: reservationsService.issue,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.reservations });
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.transactions });
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.books });
+      setPendingAction(null);
+      toast.success('Book issued');
     },
     onError: (error) => {
       toast.error(getApiErrorMessage(error, 'Failed to issue reserved book'));
     },
   });
 
-  const isPending = cancelMutation.isPending || fulfillMutation.isPending;
+  const isPending = cancelMutation.isPending || approveMutation.isPending || issueMutation.isPending;
   const reservations: Reservation[] = (data?.data as { data?: Reservation[] })?.data ?? [];
   const needle = q.trim().toLowerCase();
   const filteredReservations = reservations.filter((reservation) => {
@@ -82,7 +102,8 @@ export default function ReservationsPage() {
   const totalPages = Math.max(1, Math.ceil(filteredReservations.length / 20));
   const pageRows = filteredReservations.slice((page - 1) * 20, page * 20);
   const pendingCount = reservations.filter((reservation) => reservation.status === 'PENDING').length;
-  const fulfilledCount = reservations.filter((reservation) => reservation.status === 'FULFILLED').length;
+  const readyCount = reservations.filter((reservation) => reservation.status === 'READY_FOR_PICKUP').length;
+  const borrowedCount = reservations.filter((reservation) => reservation.status === 'BORROWED' || reservation.status === 'FULFILLED').length;
   const closedCount = reservations.filter((reservation) => reservation.status === 'CANCELLED' || reservation.status === 'EXPIRED').length;
   const confirmCopy = getReservationConfirmCopy(pendingAction);
 
@@ -126,26 +147,51 @@ export default function ReservationsPage() {
     {
       key: 'actions',
       header: '',
-      render: (reservation: Reservation) => (
-        reservation.status === 'PENDING' ? (
-          <TableActionGroup>
-            <TableActionButton
-              label="Issue"
-              icon={CheckCircle}
-              tone="success"
-              disabled={isPending}
-              onClick={() => setPendingAction({ type: 'approve', reservation })}
-            />
-            <TableActionButton
-              label="Decline"
-              icon={XCircle}
-              tone="danger"
-              disabled={isPending}
-              onClick={() => setPendingAction({ type: 'decline', reservation })}
-            />
-          </TableActionGroup>
-        ) : null
-      ),
+      render: (reservation: Reservation) => {
+        if (reservation.status === 'PENDING') {
+          return (
+            <TableActionGroup>
+              <TableActionButton
+                label="Approve hold"
+                icon={CheckCircle}
+                tone="success"
+                disabled={isPending}
+                onClick={() => setPendingAction({ type: 'approve', reservation })}
+              />
+              <TableActionButton
+                label="Cancel"
+                icon={XCircle}
+                tone="danger"
+                disabled={isPending}
+                onClick={() => setPendingAction({ type: 'decline', reservation })}
+              />
+            </TableActionGroup>
+          );
+        }
+
+        if (reservation.status === 'READY_FOR_PICKUP') {
+          return (
+            <TableActionGroup>
+              <TableActionButton
+                label="Issue book"
+                icon={CheckCircle}
+                tone="success"
+                disabled={isPending}
+                onClick={() => setPendingAction({ type: 'issue', reservation })}
+              />
+              <TableActionButton
+                label="Cancel"
+                icon={XCircle}
+                tone="danger"
+                disabled={isPending}
+                onClick={() => setPendingAction({ type: 'decline', reservation })}
+              />
+            </TableActionGroup>
+          );
+        }
+
+        return null;
+      },
     },
   ];
 
@@ -157,9 +203,9 @@ export default function ReservationsPage() {
       </div>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
-        <MetricCard icon={BookOpen} label="Total reservations" value={reservations.length} />
         <MetricCard icon={Clock3} label="Pending" value={pendingCount} />
-        <MetricCard icon={CheckCircle2} label="Fulfilled" value={fulfilledCount} />
+        <MetricCard icon={CheckCircle2} label="Ready for pickup" value={readyCount} />
+        <MetricCard icon={BookOpen} label="Borrowed" value={borrowedCount} />
         <MetricCard icon={TimerReset} label="Closed" value={closedCount} />
       </div>
 
@@ -176,7 +222,7 @@ export default function ReservationsPage() {
         <Select value={status || 'ALL'} onValueChange={(value) => { setStatus(value === 'ALL' ? '' : value); setPage(1); }}>
           <SelectTrigger className="w-full"><SelectValue placeholder="All statuses" /></SelectTrigger>
           <SelectContent>
-            {['ALL', 'PENDING', 'FULFILLED', 'CANCELLED', 'EXPIRED'].map((option) => (
+            {['ALL', 'PENDING', 'READY_FOR_PICKUP', 'BORROWED', 'EXPIRED', 'CANCELLED'].map((option) => (
               <SelectItem key={option} value={option}>{option === 'ALL' ? 'All statuses' : formatStatus(option)}</SelectItem>
             ))}
           </SelectContent>
@@ -204,7 +250,8 @@ export default function ReservationsPage() {
         onOpenChange={(open) => !open && setPendingAction(null)}
         onConfirm={() => {
           if (!pendingAction) return;
-          if (pendingAction.type === 'approve') fulfillMutation.mutate(pendingAction.reservation.id);
+          if (pendingAction.type === 'approve') approveMutation.mutate(pendingAction.reservation.id);
+          else if (pendingAction.type === 'issue') issueMutation.mutate(pendingAction.reservation.id);
           else cancelMutation.mutate(pendingAction.reservation.id);
         }}
       >
@@ -256,17 +303,28 @@ function getReservationConfirmCopy(action: ReservationAction | null): {
   const { reservation } = action;
   if (action.type === 'approve') {
     return {
+      title: 'Approve pickup hold?',
+      description: `${reservation.memberName}'s reservation for "${reservation.bookTitle}" will hold one copy until ${formatDate(reservation.expiresAt)}. The book is not borrowed until pickup.`,
+      confirmLabel: 'Approve hold',
+      eyebrow: 'Pickup hold',
+      tone: 'success',
+    };
+  }
+  if (action.type === 'issue') {
+    return {
       title: 'Issue reserved book?',
-      description: `${reservation.memberName}'s reservation for "${reservation.bookTitle}" will become an active borrow with a due date and will count against their borrowing limit.`,
+      description: `${reservation.memberName} has arrived to pick up "${reservation.bookTitle}". This creates an active borrow and counts against their borrowing limit.`,
       confirmLabel: 'Issue book',
       eyebrow: 'Issue book',
       tone: 'success',
     };
   }
   return {
-    title: 'Decline reservation?',
-    description: `${reservation.memberName}'s reservation for "${reservation.bookTitle}" will be cancelled and closed.`,
-    confirmLabel: 'Decline',
+    title: 'Cancel reservation?',
+    description: reservation.status === 'READY_FOR_PICKUP'
+      ? `${reservation.memberName}'s pickup hold for "${reservation.bookTitle}" will be cancelled and the held copy will be released.`
+      : `${reservation.memberName}'s reservation for "${reservation.bookTitle}" will be cancelled and closed.`,
+    confirmLabel: 'Cancel',
     eyebrow: 'Cancel hold',
     tone: 'danger',
   };
@@ -289,5 +347,13 @@ function MetricCard({ icon: Icon, label, value }: { icon: React.ElementType; lab
 }
 
 function formatStatus(status: string) {
-  return status.charAt(0) + status.slice(1).toLowerCase();
+  const labels: Record<string, string> = {
+    PENDING: 'Pending',
+    READY_FOR_PICKUP: 'Ready for pickup',
+    BORROWED: 'Borrowed',
+    FULFILLED: 'Borrowed',
+    CANCELLED: 'Cancelled',
+    EXPIRED: 'Expired',
+  };
+  return labels[status] ?? status.charAt(0) + status.slice(1).toLowerCase();
 }
