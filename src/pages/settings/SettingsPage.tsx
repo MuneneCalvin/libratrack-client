@@ -23,7 +23,7 @@ const SETTINGS: Setting[] = [
   { key: 'fine_rate_per_day', label: 'Fine Rate Per Day', description: 'Daily fine charged for overdue books', icon: Clock, prefix: 'KES' },
   { key: 'max_borrow_days', label: 'Max Borrow Days', description: 'Maximum number of days a member can borrow books', icon: CalendarDays, suffix: 'days' },
   { key: 'max_books_per_member', label: 'Max Books Per Member', description: 'Maximum books a member can borrow at once', icon: BookOpen, suffix: 'books' },
-  { key: 'reservation_expiry_days', label: 'Reservation Expiry', description: 'Days before an unfulfilled reservation expires', icon: Users, suffix: 'days' },
+  { key: 'reservation_expiry_days', label: 'Reservation Expiry', description: 'Pickup window after a reservation is approved', icon: Users, suffix: 'days' },
 ];
 
 export default function SettingsPage() {

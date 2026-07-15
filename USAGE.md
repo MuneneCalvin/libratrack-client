@@ -112,14 +112,16 @@ Reservations are displayed as cards. Each card shows:
 - Book title and author
 - Member name
 - Reserved date and expiry date
-- Status badge (colour-coded: blue = PENDING, green = FULFILLED, grey = CANCELLED, red = EXPIRED)
+- Status badge (colour-coded: blue = PENDING, green = READY_FOR_PICKUP, grey = BORROWED/CANCELLED, red = EXPIRED)
 
-**For PENDING reservations**, two action buttons appear:
+**For PENDING reservations**, staff can approve a pickup hold or cancel the request:
 
 | Button | Action |
 |---|---|
-| **Approve** | Marks the reservation as FULFILLED |
-| **Decline** | Cancels the reservation |
+| **Approve hold** | Holds one copy and marks the reservation as READY_FOR_PICKUP |
+| **Cancel** | Cancels the reservation |
+
+**For READY_FOR_PICKUP reservations**, staff can issue the book when the member arrives or cancel the hold to release the copy.
 
 Filter reservations by status using the dropdown at the top.
 
@@ -161,7 +163,7 @@ Configure the library's operating rules:
 | Fine Rate Per Day (KES) | Daily charge per overdue book |
 | Max Borrow Days | How long members can keep a book |
 | Max Books Per Member | Maximum concurrent borrows per member |
-| Reservation Expiry Days | Days before an unfulfilled reservation expires |
+| Reservation Expiry Days | Pickup window after a reservation is approved |
 
 Click **Save Settings** to apply. Changes take effect on the next transaction.
 
