@@ -69,4 +69,41 @@ describe('PortalReservationsPage', () => {
     expect(screen.getByText(/Pick up by/i)).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Cancel/i })).not.toBeInTheDocument();
   });
+
+  it('searches reservations by visible status label', async () => {
+    const user = userEvent.setup();
+    server.use(
+      http.get('*/api/members/7/reservations/', () => HttpResponse.json({
+        status: 'success',
+        data: [
+          {
+            id: 9,
+            bookTitle: 'Clean Code',
+            bookAuthor: 'Robert Martin',
+            bookCoverUrl: null,
+            status: 'READY_FOR_PICKUP',
+            reservedAt: new Date().toISOString(),
+            expiresAt: new Date(Date.now() + 86400000).toISOString(),
+          },
+          {
+            id: 10,
+            bookTitle: 'Refactoring',
+            bookAuthor: 'Martin Fowler',
+            bookCoverUrl: null,
+            status: 'PENDING',
+            reservedAt: new Date().toISOString(),
+            expiresAt: new Date(Date.now() + 86400000).toISOString(),
+          },
+        ],
+      })),
+    );
+
+    renderPage();
+
+    await waitFor(() => expect(screen.getByText('Clean Code')).toBeInTheDocument());
+    await user.type(screen.getByPlaceholderText('Search by book, author, or status...'), 'ready for pickup');
+
+    expect(screen.getByText('Clean Code')).toBeInTheDocument();
+    expect(screen.queryByText('Refactoring')).not.toBeInTheDocument();
+  });
 });

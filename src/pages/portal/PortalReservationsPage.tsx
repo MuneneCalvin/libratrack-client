@@ -87,7 +87,7 @@ export default function PortalReservationsPage() {
   const filteredReservations = reservations.filter((reservation) => {
     const statusMatch = !status || reservation.status === status;
     if (!needle) return statusMatch;
-    const text = `${reservation.bookTitle} ${reservation.bookAuthor} ${reservation.status}`.toLowerCase();
+    const text = `${reservation.bookTitle} ${reservation.bookAuthor} ${reservation.status} ${formatStatus(reservation.status)}`.toLowerCase();
     return statusMatch && text.includes(needle);
   });
   const totalPages = Math.max(1, Math.ceil(filteredReservations.length / 20));
