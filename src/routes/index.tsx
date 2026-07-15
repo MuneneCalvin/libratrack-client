@@ -26,6 +26,7 @@ import PortalNotificationsPage from '@/pages/portal/PortalNotificationsPage';
 import ProfilePage from '@/pages/profile/ProfilePage';
 import PortalProfilePage from '@/pages/portal/PortalProfilePage';
 import PortalBooksPage from '@/pages/portal/PortalBooksPage';
+import PortalMyBooksPage from '@/pages/portal/PortalMyBooksPage';
 
 export default function AppRoutes() {
   return (
@@ -62,6 +63,7 @@ export default function AppRoutes() {
         <Route path="notifications" element={<PortalNotificationsPage />} />
         <Route path="profile" element={<PortalProfilePage />} />
         <Route path="books" element={<PortalBooksPage />} />
+        <Route path="my-books" element={<PortalMyBooksPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/login" replace />} />
     </Routes>

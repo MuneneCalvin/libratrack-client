@@ -12,11 +12,12 @@ import {
   DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
-import { LayoutDashboard, CalendarCheck, AlertCircle, Moon, Sun, LogOut, BookOpen, User, Menu } from 'lucide-react';
+import { LayoutDashboard, CalendarCheck, AlertCircle, Moon, Sun, LogOut, BookOpen, User, Menu, BookMarked } from 'lucide-react';
 
 const navItems = [
   { to: '/portal/dashboard', icon: LayoutDashboard, label: 'My Dashboard' },
   { to: '/portal/books', icon: BookOpen, label: 'Browse Books' },
+  { to: '/portal/my-books', icon: BookMarked, label: 'My Books' },
   { to: '/portal/reservations', icon: CalendarCheck, label: 'Reservations' },
   { to: '/portal/fines', icon: AlertCircle, label: 'Fines' },
 ];

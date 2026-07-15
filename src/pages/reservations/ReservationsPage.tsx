@@ -196,6 +196,7 @@ export default function ReservationsPage() {
         title={confirmCopy.title}
         description={confirmCopy.description}
         confirmLabel={confirmCopy.confirmLabel}
+        eyebrow={confirmCopy.eyebrow}
         tone={confirmCopy.tone}
         isPending={isPending}
         onOpenChange={(open) => !open && setPendingAction(null)}
@@ -213,15 +214,17 @@ function getReservationConfirmCopy(action: ReservationAction | null): {
   title: string;
   description: string;
   confirmLabel: string;
+  eyebrow: string;
   tone: 'danger' | 'warning' | 'success';
 } {
-  if (!action) return { title: '', description: '', confirmLabel: '', tone: 'warning' };
+  if (!action) return { title: '', description: '', confirmLabel: '', eyebrow: '', tone: 'warning' };
   const { reservation } = action;
   if (action.type === 'approve') {
     return {
-      title: 'Approve reservation?',
-      description: `${reservation.memberName}'s reservation for "${reservation.bookTitle}" will be marked as fulfilled.`,
-      confirmLabel: 'Approve',
+      title: 'Issue reserved book?',
+      description: `${reservation.memberName}'s reservation for "${reservation.bookTitle}" will become an active borrow with a due date and will count against their borrowing limit.`,
+      confirmLabel: 'Issue book',
+      eyebrow: 'Issue book',
       tone: 'success',
     };
   }
@@ -229,6 +232,7 @@ function getReservationConfirmCopy(action: ReservationAction | null): {
     title: 'Decline reservation?',
     description: `${reservation.memberName}'s reservation for "${reservation.bookTitle}" will be cancelled and closed.`,
     confirmLabel: 'Decline',
+    eyebrow: 'Cancel hold',
     tone: 'danger',
   };
 }

@@ -90,6 +90,7 @@ describe('responsive navigation layouts', () => {
     renderPortalLayout();
 
     expect(screen.getByRole('button', { name: 'Open member navigation' })).toBeInTheDocument();
+    expect(screen.getByText('My Books')).toBeInTheDocument();
     expect(screen.getByText('Portal content')).toBeInTheDocument();
   });
 });

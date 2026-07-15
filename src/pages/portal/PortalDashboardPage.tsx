@@ -115,7 +115,7 @@ export default function PortalDashboardPage() {
   });
   const { data: txData, isLoading } = useQuery({
     queryKey: QUERY_KEYS.memberTransactions(memberId),
-    queryFn: () => transactionsService.getByMember(memberId, { status: 'ACTIVE', limit: 5 }),
+    queryFn: () => transactionsService.getByMember(memberId),
     enabled: !!user?.memberId,
   });
   const { data: finesData } = useQuery({
@@ -134,7 +134,10 @@ export default function PortalDashboardPage() {
   });
 
   const member = (memberData?.data as { data?: { fullName?: string } })?.data;
-  const activeTx = (txData?.data as { data?: { id: number; items: { book: { title: string } }[]; dueDate: string; status: string }[] })?.data ?? [];
+  const transactions = (txData?.data as { data?: { id: number; items: { book: { title: string }; returnedAt?: string | null }[]; dueDate: string; status: string; returnedAt?: string | null }[] })?.data ?? [];
+  const activeTx = transactions
+    .filter((transaction) => ['ACTIVE', 'OVERDUE'].includes(transaction.status) && transaction.items.some((item) => !item.returnedAt))
+    .slice(0, 5);
   const unpaidFines = (finesData?.data as { data?: { id: number; amount: number; reason: string }[] })?.data ?? [];
   const pendingRes = (resData?.data as { data?: { id: number; bookTitle: string; expiresAt: string }[] })?.data ?? [];
   const recommended = (recommendedData?.data as { data?: Book[] })?.data ?? [];

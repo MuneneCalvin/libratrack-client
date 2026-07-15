@@ -2,7 +2,7 @@
 
 LibraTrack is a browser-based library management interface for administrators,
 librarians, and members. The frontend is built with React, TypeScript, Vite, and
-Tailwind CSS, and consumes the Django REST API from the server repository.
+Tailwind CSS, and consumes the PHP REST API from the server repository.
 
 The app is intended to demonstrate the full library workflow: managing a catalog,
 tracking copies, registering members, borrowing and returning books, reservations,
@@ -54,10 +54,11 @@ fines, notifications, reports, and member self-service.
 
 - Node.js 20 or later.
 - npm 10 or later.
-- The LibraTrack backend running at `http://localhost:8000/api`.
+- The LibraTrack PHP backend installed, migrated, seeded, and running at
+  `http://localhost:8000`.
 
-The backend README covers database setup, migrations, seed data, and the optional
-Open Library import.
+The backend README covers Composer install, `.env` setup, MySQL migrations,
+seed data, and the optional Open Library catalog import.
 
 ---
 
@@ -81,7 +82,25 @@ Edit `.env.local` if your backend is not running on the default local URL:
 VITE_API_URL=http://localhost:8000/api
 ```
 
-### 3. Start the development server
+The PHP backend must allow the Vite origin in its backend `.env`:
+
+```env
+CORS_ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
+```
+
+If Vite starts on another port, add that origin to the backend CORS list.
+
+### 3. Start the backend
+
+From the PHP server repository:
+
+```bash
+php -S localhost:8000 -t public
+```
+
+Keep this terminal open.
+
+### 4. Start the frontend
 
 ```bash
 npm run dev
@@ -163,13 +182,23 @@ The frontend does not call Open Library directly. Books are imported into the
 backend database with:
 
 ```bash
-python manage.py import_openlibrary_books --limit 500 --copies 50
+php scripts/import_openlibrary_books.php --limit=500 --copies=50 --skip-work-details --timeout=60 --retries=6 --page-size=25
+```
+
+On Windows, if PHP/OpenSSL cannot verify Open Library SSL certificates, use the
+prototype fallback:
+
+```bash
+php scripts/import_openlibrary_books.php --limit=500 --copies=50 --skip-work-details --timeout=60 --retries=6 --page-size=25 --insecure
 ```
 
 After import, the frontend reads the catalog from the normal `/api/books/`
 endpoint. Imported records include cover URLs, synopsis text when available,
 subjects/tags, language codes, edition counts, ratings, and reading-list
 popularity counts.
+
+The app can run while the import is still running. The catalog grows as imported
+records are inserted into MySQL.
 
 ---
 
@@ -270,7 +299,7 @@ npm run build
 ```
 
 The output is written to `dist/`. In production, serve the static files with a
-web server and proxy `/api` requests to the Django backend.
+web server and proxy `/api` requests to the PHP backend.
 
 The repository includes a `Dockerfile` and `nginx.conf` for container-based
 static hosting.
@@ -297,3 +326,16 @@ local backend or set `VITE_API_URL` to a reachable backend URL.
 
 Keep the terminal sessions running while testers use the link. The temporary URL
 stops working when the tunnel process or local machine stops.
+
+Typical local share order:
+
+```bash
+# terminal 1, backend repo
+php -S localhost:8000 -t public
+
+# terminal 2, frontend repo
+npm run dev
+
+# terminal 3
+ngrok http http://127.0.0.1:5173
+```

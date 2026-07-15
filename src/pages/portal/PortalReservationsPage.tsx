@@ -213,9 +213,11 @@ export default function PortalReservationsPage() {
 
       {/* New Reservation Dialog */}
       <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) { setSearch(''); setSelectedBookId(null); } }}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader><DialogTitle>Reserve a Book</DialogTitle></DialogHeader>
-          <div className="space-y-4">
+        <DialogContent className="max-w-[calc(100vw-2rem)] overflow-x-hidden p-0 sm:max-w-3xl">
+          <DialogHeader className="border-b border-border px-5 pb-4 pt-5 sm:px-6">
+            <DialogTitle>Reserve a Book</DialogTitle>
+          </DialogHeader>
+          <div className="max-h-[min(64vh,34rem)] space-y-4 overflow-y-auto overflow-x-hidden px-5 py-4 sm:px-6">
             <div className="space-y-1.5">
               <Label>Search for a book</Label>
               <div className="relative">
@@ -253,7 +255,7 @@ export default function PortalReservationsPage() {
               <p className="text-sm text-text-secondary">No books found.</p>
             )}
           </div>
-          <DialogFooter>
+          <DialogFooter className="mx-0 mb-0 rounded-none px-5 py-4 sm:px-6">
             <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
             <Button
               disabled={!selectedBookId || createMutation.isPending}
