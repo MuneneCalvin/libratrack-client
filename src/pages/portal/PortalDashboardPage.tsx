@@ -144,7 +144,7 @@ export default function PortalDashboardPage() {
   });
   const { data: resData } = useQuery({
     queryKey: QUERY_KEYS.memberReservations(memberId),
-    queryFn: () => reservationsService.getByMember(memberId, { status: 'PENDING' }),
+    queryFn: () => reservationsService.getByMember(memberId),
     enabled: !!user?.memberId,
   });
   const { data: recommendedData } = useQuery({
@@ -158,7 +158,9 @@ export default function PortalDashboardPage() {
     .filter((transaction) => ['ACTIVE', 'OVERDUE'].includes(transaction.status) && transaction.items.some((item) => !item.returnedAt))
     .slice(0, 5);
   const unpaidFines = (finesData?.data as { data?: { id: number; amount: number; reason: string }[] })?.data ?? [];
-  const pendingRes = (resData?.data as { data?: { id: number; bookTitle: string; expiresAt: string }[] })?.data ?? [];
+  const reservations = (resData?.data as { data?: { id: number; bookTitle: string; bookAuthor?: string; bookCoverUrl?: string | null; expiresAt: string; status: string }[] })?.data ?? [];
+  const pendingRes = reservations.filter((reservation) => reservation.status === 'PENDING');
+  const readyPickup = reservations.filter((reservation) => reservation.status === 'READY_FOR_PICKUP');
   const recommended = (recommendedData?.data as { data?: Book[] })?.data ?? [];
   const totalFines = unpaidFines.reduce((s, f) => s + Number(f.amount), 0);
   const visibleRecommendations = getVisibleBooks(recommended, activeSlide);
@@ -276,7 +278,38 @@ export default function PortalDashboardPage() {
         </CardContent>
       </Card>
 
-      <div className="grid grid-cols-1 xl:grid-cols-[1.2fr_1fr_1fr] gap-6">
+      <div className="grid grid-cols-1 xl:grid-cols-[1.1fr_1fr_1fr_1fr] gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <CalendarCheck size={16} /> Ready for pickup
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {readyPickup.length === 0 ? (
+              <p className="text-text-secondary text-sm py-2">No books waiting for pickup.</p>
+            ) : (
+              <div className="divide-y divide-border">
+                {readyPickup.map((reservation) => (
+                  <div key={reservation.id} className="flex items-center justify-between gap-3 py-3 text-sm">
+                    <div className="flex min-w-0 items-center gap-3">
+                      <BookThumb
+                        book={{ title: reservation.bookTitle, author: reservation.bookAuthor, coverUrl: reservation.bookCoverUrl ?? undefined }}
+                        className="size-11 rounded-md"
+                      />
+                      <div className="min-w-0">
+                        <p className="truncate font-medium text-text-primary">{reservation.bookTitle}</p>
+                        <p className="truncate text-xs text-text-secondary">{reservation.bookAuthor ?? 'Unknown author'}</p>
+                      </div>
+                    </div>
+                    <span className="shrink-0 text-xs font-medium text-accent">Pick up by {formatDate(reservation.expiresAt)}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
         {/* Currently Borrowed */}
         <Card>
           <CardHeader><CardTitle className="text-base flex items-center gap-2"><BookOpen size={16} /> Currently Borrowed</CardTitle></CardHeader>

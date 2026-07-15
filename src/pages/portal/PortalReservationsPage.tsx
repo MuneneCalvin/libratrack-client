@@ -79,7 +79,8 @@ export default function PortalReservationsPage() {
   const reservations = unwrapData<ReservationRow[]>(data?.data) ?? [];
   const books = unwrapData<Book[]>(booksData?.data) ?? [];
   const pending = reservations.filter((r) => r.status === 'PENDING');
-  const fulfilled = reservations.filter((r) => r.status === 'FULFILLED');
+  const readyPickup = reservations.filter((r) => r.status === 'READY_FOR_PICKUP');
+  const borrowed = reservations.filter((r) => r.status === 'BORROWED' || r.status === 'FULFILLED');
   const cancelled = reservations.filter((r) => r.status === 'CANCELLED');
   const expired = reservations.filter((r) => r.status === 'EXPIRED');
   const needle = q.trim().toLowerCase();
@@ -91,7 +92,7 @@ export default function PortalReservationsPage() {
   });
   const totalPages = Math.max(1, Math.ceil(filteredReservations.length / 20));
   const pageRows = filteredReservations.slice((page - 1) * 20, page * 20);
-  const nextExpiry = pending
+  const nextExpiry = readyPickup
     .map((r) => daysUntil(r.expiresAt))
     .sort((a, b) => a - b)[0];
   const columns = [
@@ -106,6 +107,9 @@ export default function PortalReservationsPage() {
           <div className="min-w-0">
             <p className="line-clamp-1 font-medium text-text-primary">{reservation.bookTitle}</p>
             <p className="truncate text-xs text-text-secondary">{reservation.bookAuthor}</p>
+            {reservation.status === 'READY_FOR_PICKUP' && (
+              <p className="mt-1 text-xs font-medium text-accent">Pick up by {formatDate(reservation.expiresAt)}</p>
+            )}
           </div>
         </div>
       ),
@@ -161,7 +165,7 @@ export default function PortalReservationsPage() {
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <SummaryTile icon={Clock3} label="Pending" value={pending.length} />
-        <SummaryTile icon={CheckCircle2} label="Fulfilled" value={fulfilled.length} tone="success" />
+        <SummaryTile icon={CheckCircle2} label="Borrowed" value={borrowed.length} tone="success" />
         <SummaryTile icon={TimerReset} label="Next expiry" value={nextExpiry != null ? `${Math.max(0, nextExpiry)} days` : 'None'} />
         <SummaryTile icon={XCircle} label="Closed" value={cancelled.length + expired.length} tone="muted" />
       </div>
@@ -179,7 +183,7 @@ export default function PortalReservationsPage() {
         <Select value={status || 'ALL'} onValueChange={(value) => { setStatus(value === 'ALL' ? '' : value); setPage(1); }}>
           <SelectTrigger className="w-full"><SelectValue placeholder="All statuses" /></SelectTrigger>
           <SelectContent>
-            {['ALL', 'PENDING', 'FULFILLED', 'CANCELLED', 'EXPIRED'].map((option) => (
+            {['ALL', 'PENDING', 'READY_FOR_PICKUP', 'BORROWED', 'CANCELLED', 'EXPIRED'].map((option) => (
               <SelectItem key={option} value={option}>{option === 'ALL' ? 'All statuses' : formatStatus(option)}</SelectItem>
             ))}
           </SelectContent>
@@ -300,14 +304,23 @@ function SummaryTile({
 }
 
 function ReservationBadge({ status }: { status: string }) {
-  if (status === 'PENDING') return <Badge>Pending</Badge>;
-  if (status === 'FULFILLED') return <Badge variant="secondary">Fulfilled</Badge>;
+  if (status === 'PENDING') return <Badge>{formatStatus(status)}</Badge>;
+  if (status === 'READY_FOR_PICKUP') return <Badge>{formatStatus(status)}</Badge>;
+  if (status === 'BORROWED' || status === 'FULFILLED') return <Badge variant="secondary">{formatStatus(status)}</Badge>;
   if (status === 'EXPIRED') return <Badge variant="destructive">Expired</Badge>;
-  return <Badge variant="outline">{status.toLowerCase()}</Badge>;
+  return <Badge variant="outline">{formatStatus(status)}</Badge>;
 }
 
 function formatStatus(status: string) {
-  return status.charAt(0) + status.slice(1).toLowerCase();
+  const labels: Record<string, string> = {
+    PENDING: 'Pending',
+    READY_FOR_PICKUP: 'Ready for pickup',
+    BORROWED: 'Borrowed',
+    FULFILLED: 'Borrowed',
+    CANCELLED: 'Cancelled',
+    EXPIRED: 'Expired',
+  };
+  return labels[status] ?? status;
 }
 
 function unwrapData<T>(payload: unknown): T | undefined {

@@ -45,4 +45,28 @@ describe('PortalReservationsPage', () => {
     expect(dialog).toHaveClass('overflow-x-hidden');
     expect(screen.getByRole('button', { name: 'Reserve' })).toBeInTheDocument();
   });
+
+  it('shows ready-for-pickup reservations with pickup deadline and no cancel action', async () => {
+    server.use(
+      http.get('*/api/members/7/reservations/', () => HttpResponse.json({
+        status: 'success',
+        data: [{
+          id: 9,
+          bookTitle: 'Clean Code',
+          bookAuthor: 'Robert Martin',
+          bookCoverUrl: null,
+          status: 'READY_FOR_PICKUP',
+          reservedAt: new Date().toISOString(),
+          expiresAt: new Date(Date.now() + 86400000).toISOString(),
+        }],
+      })),
+    );
+
+    renderPage();
+
+    await waitFor(() => expect(screen.getByText('Clean Code')).toBeInTheDocument());
+    expect(screen.getByText('Ready for pickup')).toBeInTheDocument();
+    expect(screen.getByText(/Pick up by/i)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Cancel/i })).not.toBeInTheDocument();
+  });
 });

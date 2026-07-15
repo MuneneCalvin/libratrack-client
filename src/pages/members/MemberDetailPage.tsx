@@ -213,7 +213,7 @@ export default function MemberDetailPage() {
                 key={reservation.id}
                 title={reservation.bookTitle}
                 meta={`Reserved ${formatDate(reservation.reservedAt)} · Expires ${formatDate(reservation.expiresAt)}`}
-                badge={reservation.status}
+                badge={reservationStatusLabel(reservation.status)}
               />
             ))}
           </CardContent>
@@ -310,6 +310,18 @@ function ActivityRow({ title, meta, badge, danger = false }: { title: string; me
       <Badge variant={danger ? 'destructive' : 'secondary'} className="shrink-0 text-xs">{badge}</Badge>
     </div>
   );
+}
+
+function reservationStatusLabel(status: string) {
+  const labels: Record<string, string> = {
+    PENDING: 'Pending',
+    READY_FOR_PICKUP: 'Ready for pickup',
+    BORROWED: 'Borrowed',
+    FULFILLED: 'Borrowed',
+    CANCELLED: 'Cancelled',
+    EXPIRED: 'Expired',
+  };
+  return labels[status] ?? status;
 }
 
 interface MemberTransaction {
