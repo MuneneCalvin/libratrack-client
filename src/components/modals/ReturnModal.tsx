@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { transactionsService } from '@/services/transactions.service';
 import { membersService, type Member } from '@/services/members.service';
 import { QUERY_KEYS } from '@/lib/constants';
+import { getApiErrorMessage } from '@/lib/apiErrors';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
 } from '@/components/ui/dialog';
@@ -114,10 +115,10 @@ export default function ReturnModal({ open, onClose }: Props) {
       });
       handleClose();
     },
-    onError: (e: { response?: { data?: { detail?: string; message?: string } } }) => {
-      const message = e.response?.data?.detail ?? e.response?.data?.message ?? 'Failed to process return. Please try again.';
+    onError: (error) => {
+      const message = getApiErrorMessage(error, 'Failed to process return. Please try again.');
       setError(message);
-      toast.error('Failed to process return');
+      toast.error(message);
     },
   });
 

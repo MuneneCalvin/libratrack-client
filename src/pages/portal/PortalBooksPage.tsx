@@ -4,6 +4,7 @@ import { useAuthStore } from '@/store/auth.store';
 import { booksService, type Book } from '@/services/books.service';
 import { reservationsService } from '@/services/reservations.service';
 import { QUERY_KEYS } from '@/lib/constants';
+import { getApiErrorMessage } from '@/lib/apiErrors';
 import { getBookCoverStyle } from '@/lib/bookCover';
 import { formatLanguageCodes, formatPopularity, formatRating } from '@/lib/bookMetadata';
 import { Card, CardContent } from '@/components/ui/card';
@@ -79,8 +80,8 @@ export default function PortalBooksPage() {
       });
       setConfirmBook(null);
     },
-    onError: () => {
-      toast.error('Failed to reserve book');
+    onError: (error) => {
+      toast.error(getApiErrorMessage(error, 'Failed to reserve book'));
     },
   });
 

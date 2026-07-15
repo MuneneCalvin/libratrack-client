@@ -7,9 +7,11 @@ import { reservationsService } from '@/services/reservations.service';
 import { membersService } from '@/services/members.service';
 import { booksService, type Book } from '@/services/books.service';
 import { QUERY_KEYS } from '@/lib/constants';
+import { getApiErrorMessage } from '@/lib/apiErrors';
 import { getBookCoverStyle } from '@/lib/bookCover';
 import { formatRating } from '@/lib/bookMetadata';
 import StatsCard from '@/components/StatsCard';
+import { BookThumb } from '@/components/CatalogVisuals';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -102,6 +104,23 @@ function RecommendedBookSlide({
   );
 }
 
+interface DashboardTransaction {
+  id: number;
+  dueDate: string;
+  returnedAt?: string | null;
+  status: string;
+  items: {
+    id?: number;
+    returnedAt?: string | null;
+    book: {
+      id?: number;
+      title: string;
+      author?: string;
+      coverUrl?: string | null;
+    };
+  }[];
+}
+
 export default function PortalDashboardPage() {
   const { user } = useAuthStore();
   const memberId = user?.memberId ?? 0;
@@ -134,7 +153,7 @@ export default function PortalDashboardPage() {
   });
 
   const member = (memberData?.data as { data?: { fullName?: string } })?.data;
-  const transactions = (txData?.data as { data?: { id: number; items: { book: { title: string }; returnedAt?: string | null }[]; dueDate: string; status: string; returnedAt?: string | null }[] })?.data ?? [];
+  const transactions = (txData?.data as { data?: DashboardTransaction[] })?.data ?? [];
   const activeTx = transactions
     .filter((transaction) => ['ACTIVE', 'OVERDUE'].includes(transaction.status) && transaction.items.some((item) => !item.returnedAt))
     .slice(0, 5);
@@ -153,8 +172,8 @@ export default function PortalDashboardPage() {
         description: `${book.title} has been added to your reservations.`,
       });
     },
-    onError: () => {
-      toast.error('Failed to reserve book');
+    onError: (error) => {
+      toast.error(getApiErrorMessage(error, 'Failed to reserve book'));
     },
   });
 
@@ -268,9 +287,20 @@ export default function PortalDashboardPage() {
               <div className="divide-y divide-border">
                 {activeTx.map((t) => {
                   const isOverdue = new Date(t.dueDate) < new Date();
+                  const activeItems = t.items.filter((item) => !item.returnedAt);
                   return (
-                    <div key={t.id} className="py-2.5 flex justify-between items-start gap-4 text-sm">
-                      <span className="text-text-primary">{t.items.map((i) => i.book.title).join(', ')}</span>
+                    <div key={t.id} className="flex flex-col gap-3 py-3 text-sm sm:flex-row sm:items-start sm:justify-between">
+                      <div className="min-w-0 space-y-2">
+                        {activeItems.map((item, index) => (
+                          <div key={item.id ?? `${t.id}-${index}`} className="flex min-w-0 items-center gap-3">
+                            <BookThumb book={item.book} className="size-11 rounded-md" />
+                            <div className="min-w-0">
+                              <p className="truncate font-medium text-text-primary">{item.book.title}</p>
+                              <p className="truncate text-xs text-text-secondary">{item.book.author ?? 'Unknown author'}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
                       <div className="text-right shrink-0">
                         <span className={isOverdue ? 'text-danger font-medium' : 'text-text-secondary'}>
                           {isOverdue ? 'Overdue' : 'Due'} {formatDate(t.dueDate)}

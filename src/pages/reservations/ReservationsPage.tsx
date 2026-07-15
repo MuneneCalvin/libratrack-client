@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { reservationsService } from '@/services/reservations.service';
 import { QUERY_KEYS } from '@/lib/constants';
+import { getApiErrorMessage } from '@/lib/apiErrors';
 import DataTable from '@/components/DataTable';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
@@ -52,8 +53,8 @@ export default function ReservationsPage() {
       setPendingAction(null);
       toast.success('Reservation declined');
     },
-    onError: () => {
-      toast.error('Failed to decline reservation');
+    onError: (error) => {
+      toast.error(getApiErrorMessage(error, 'Failed to decline reservation'));
     },
   });
 
@@ -62,10 +63,10 @@ export default function ReservationsPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.reservations });
       setPendingAction(null);
-      toast.success('Reservation approved');
+      toast.success('Reserved book issued');
     },
-    onError: () => {
-      toast.error('Failed to approve reservation');
+    onError: (error) => {
+      toast.error(getApiErrorMessage(error, 'Failed to issue reserved book'));
     },
   });
 
@@ -129,7 +130,7 @@ export default function ReservationsPage() {
         reservation.status === 'PENDING' ? (
           <TableActionGroup>
             <TableActionButton
-              label="Approve"
+              label="Issue"
               icon={CheckCircle}
               tone="success"
               disabled={isPending}
@@ -199,13 +200,47 @@ export default function ReservationsPage() {
         eyebrow={confirmCopy.eyebrow}
         tone={confirmCopy.tone}
         isPending={isPending}
+        contentClassName="min-h-[30rem] sm:max-w-[44rem]"
         onOpenChange={(open) => !open && setPendingAction(null)}
         onConfirm={() => {
           if (!pendingAction) return;
           if (pendingAction.type === 'approve') fulfillMutation.mutate(pendingAction.reservation.id);
           else cancelMutation.mutate(pendingAction.reservation.id);
         }}
-      />
+      >
+        {pendingAction && <ReservationConfirmSummary reservation={pendingAction.reservation} />}
+      </ConfirmDialog>
+    </div>
+  );
+}
+
+function ReservationConfirmSummary({ reservation }: { reservation: Reservation }) {
+  return (
+    <div className="grid gap-3 rounded-xl border border-border/80 bg-background/75 p-3 text-sm sm:grid-cols-2">
+      <div className="flex min-w-0 items-center gap-3 rounded-lg bg-surface/80 p-3">
+        <BookThumb book={{ title: reservation.bookTitle, coverUrl: reservation.bookCoverUrl ?? undefined }} className="size-12 rounded-md" />
+        <div className="min-w-0">
+          <p className="text-xs font-semibold uppercase tracking-wide text-text-secondary">Book</p>
+          <p className="truncate font-semibold text-text-primary">{reservation.bookTitle}</p>
+          <p className="truncate text-xs text-text-secondary">{reservation.bookAuthor || 'Unknown author'}</p>
+        </div>
+      </div>
+      <div className="flex min-w-0 items-center gap-3 rounded-lg bg-surface/80 p-3">
+        <MemberAvatar name={reservation.memberName} className="size-12" />
+        <div className="min-w-0">
+          <p className="text-xs font-semibold uppercase tracking-wide text-text-secondary">Member</p>
+          <p className="truncate font-semibold text-text-primary">{reservation.memberName}</p>
+          <p className="text-xs text-text-secondary">Reserved {formatDate(reservation.reservedAt)}</p>
+        </div>
+      </div>
+      <div className="rounded-lg bg-surface/80 p-3">
+        <p className="text-xs font-semibold uppercase tracking-wide text-text-secondary">Status</p>
+        <p className="mt-1 font-semibold text-text-primary">{formatStatus(reservation.status)}</p>
+      </div>
+      <div className="rounded-lg bg-surface/80 p-3">
+        <p className="text-xs font-semibold uppercase tracking-wide text-text-secondary">Hold expires</p>
+        <p className="mt-1 font-semibold text-text-primary">{formatDate(reservation.expiresAt)}</p>
+      </div>
     </div>
   );
 }

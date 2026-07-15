@@ -56,6 +56,7 @@ describe('PortalMyBooksPage', () => {
 
     await waitFor(() => expect(screen.getByRole('heading', { name: 'My Books' })).toBeInTheDocument());
     expect(screen.getAllByText('Clean Code')).toHaveLength(2);
+    expect(screen.getAllByRole('link', { name: /Clean Code/i })[0]).toHaveAttribute('href', '/portal/books/5');
     expect(screen.getAllByText('Due soon').length).toBeGreaterThan(0);
     expect(screen.getByText('Refactoring')).toBeInTheDocument();
     expect(screen.getAllByText(/15\.00/).length).toBeGreaterThan(0);

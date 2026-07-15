@@ -9,6 +9,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import type { ReactNode } from 'react';
 
 type ConfirmTone = 'danger' | 'warning' | 'success';
 
@@ -21,6 +22,8 @@ interface ConfirmDialogProps {
   cancelLabel?: string;
   tone?: ConfirmTone;
   isPending?: boolean;
+  contentClassName?: string;
+  children?: ReactNode;
   onOpenChange: (open: boolean) => void;
   onConfirm: () => void;
 }
@@ -61,6 +64,8 @@ export default function ConfirmDialog({
   cancelLabel = 'Cancel',
   tone = 'warning',
   isPending = false,
+  contentClassName,
+  children,
   onOpenChange,
   onConfirm,
 }: ConfirmDialogProps) {
@@ -69,8 +74,8 @@ export default function ConfirmDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[calc(100vw-2rem)] overflow-x-hidden rounded-2xl border border-border/80 bg-surface p-0 shadow-2xl shadow-primary/15 sm:max-w-[38rem]" showCloseButton={!isPending}>
-        <div className={cn('relative bg-gradient-to-br p-5 pb-4', toneConfig.shellClass)}>
+      <DialogContent className={cn('max-w-[calc(100vw-2rem)] overflow-x-hidden rounded-2xl border border-border/80 bg-surface p-0 shadow-2xl shadow-primary/15 sm:max-w-[38rem]', contentClassName)} showCloseButton={!isPending}>
+        <div className={cn('relative bg-gradient-to-br p-5 pb-4', toneConfig.shellClass, children && 'pb-5')}>
           <div className={cn('absolute inset-x-0 top-0 h-1', toneConfig.railClass)} />
           <div className="flex gap-4">
             <div className={cn('flex size-12 shrink-0 items-center justify-center rounded-2xl ring-1 shadow-sm', toneConfig.iconClass)}>
@@ -84,6 +89,7 @@ export default function ConfirmDialog({
               <DialogDescription className="max-w-[34rem] text-sm leading-6 text-text-secondary">
                 {description}
               </DialogDescription>
+              {children && <div className="pt-2">{children}</div>}
             </DialogHeader>
           </div>
         </div>

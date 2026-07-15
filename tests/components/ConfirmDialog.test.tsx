@@ -11,6 +11,7 @@ describe('ConfirmDialog', () => {
         description="This creates an active borrow for the member."
         confirmLabel="Issue book"
         eyebrow="Issue book"
+        contentClassName="min-h-[30rem]"
         tone="success"
         onOpenChange={vi.fn()}
         onConfirm={vi.fn()}
@@ -19,5 +20,6 @@ describe('ConfirmDialog', () => {
 
     expect(screen.getAllByText('Issue book')).toHaveLength(2);
     expect(screen.queryByText('Restore access')).not.toBeInTheDocument();
+    expect(screen.getByRole('dialog')).toHaveClass('min-h-[30rem]');
   });
 });

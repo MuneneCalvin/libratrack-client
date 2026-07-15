@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import type { ReactNode } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { Link } from 'react-router-dom';
 import { useAuthStore } from '@/store/auth.store';
 import { transactionsService } from '@/services/transactions.service';
 import { finesService } from '@/services/fines.service';
@@ -186,13 +187,17 @@ function BookSection({
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                   <div className="min-w-0 space-y-2">
                     {transaction.items.map((item) => (
-                      <div key={item.id} className="flex items-center gap-3">
-                        <BookThumb book={item.book} />
+                      <Link
+                        key={item.id}
+                        to={`/portal/books/${item.book.id}`}
+                        className="group flex min-w-0 items-center gap-3 rounded-lg p-1.5 -m-1.5 transition-colors hover:bg-accent/8 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/30"
+                      >
+                        <BookThumb book={item.book} className="size-12 rounded-md" />
                         <div className="min-w-0">
-                          <p className="truncate font-medium text-text-primary">{item.book.title}</p>
+                          <p className="truncate font-medium text-text-primary underline-offset-4 group-hover:text-accent group-hover:underline">{item.book.title}</p>
                           <p className="truncate text-xs text-text-secondary">{item.book.author ?? 'Unknown author'}</p>
                         </div>
-                      </div>
+                      </Link>
                     ))}
                   </div>
                   <div className="flex shrink-0 flex-wrap items-center gap-2 sm:justify-end">

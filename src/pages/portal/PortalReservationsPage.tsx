@@ -4,6 +4,7 @@ import { useAuthStore } from '@/store/auth.store';
 import { reservationsService } from '@/services/reservations.service';
 import { booksService, type Book } from '@/services/books.service';
 import { QUERY_KEYS } from '@/lib/constants';
+import { getApiErrorMessage } from '@/lib/apiErrors';
 import DataTable from '@/components/DataTable';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -56,8 +57,8 @@ export default function PortalReservationsPage() {
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.memberReservations(memberId) });
       toast.success('Reservation cancelled');
     },
-    onError: () => {
-      toast.error('Failed to cancel reservation');
+    onError: (error) => {
+      toast.error(getApiErrorMessage(error, 'Failed to cancel reservation'));
     },
   });
 
@@ -70,8 +71,8 @@ export default function PortalReservationsPage() {
       setSelectedBookId(null);
       toast.success('Reservation created');
     },
-    onError: () => {
-      toast.error('Failed to reserve book');
+    onError: (error) => {
+      toast.error(getApiErrorMessage(error, 'Failed to reserve book'));
     },
   });
 

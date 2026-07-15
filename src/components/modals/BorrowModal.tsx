@@ -5,6 +5,7 @@ import { membersService, type Member } from '@/services/members.service';
 import { booksService, type Book } from '@/services/books.service';
 import { api } from '@/services/api';
 import { QUERY_KEYS } from '@/lib/constants';
+import { formatBorrowLimitMessage, getApiErrorMessage } from '@/lib/apiErrors';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
 } from '@/components/ui/dialog';
@@ -89,10 +90,10 @@ export default function BorrowModal({ open, onClose }: Props) {
       });
       handleClose();
     },
-    onError: (e: { response?: { data?: { detail?: string; message?: string } } }) => {
-      const message = e.response?.data?.detail ?? e.response?.data?.message ?? 'Failed to record borrow. Please check availability and try again.';
+    onError: (error) => {
+      const message = getApiErrorMessage(error, 'Failed to record borrow. Please check availability and try again.');
       setError(message);
-      toast.error('Failed to record borrow');
+      toast.error(message);
     },
   });
 
@@ -127,11 +128,7 @@ export default function BorrowModal({ open, onClose }: Props) {
       return;
     }
     if (!alreadySelected && selectedWouldExceedLimit) {
-      setError(
-        remainingSlots === 0
-          ? `${selectedMember?.fullName ?? 'This member'} already has ${currentBorrowedCount} borrowed books, which reaches the ${maxBooks}-book limit. Return books first or increase the limit in settings.`
-          : `${selectedMember?.fullName ?? 'This member'} can only borrow ${remainingSlots} more ${remainingSlots === 1 ? 'book' : 'books'} right now.`,
-      );
+      setError(formatBorrowLimitMessage(maxBooks));
       return;
     }
     setError('');
@@ -152,7 +149,7 @@ export default function BorrowModal({ open, onClose }: Props) {
       return;
     }
     if (hasBorrowLimit && selectedBooks.length > remainingSlots) {
-      setError(`${selectedMember.fullName} can only borrow ${remainingSlots} more ${remainingSlots === 1 ? 'book' : 'books'} right now.`);
+      setError(formatBorrowLimitMessage(maxBooks));
       return;
     }
     mutation.mutate();
