@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '@/store/auth.store';
 import { booksService, type Book } from '@/services/books.service';
@@ -218,38 +219,46 @@ export default function PortalBooksPage() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-5 gap-4">
         {books.map((book) => (
           <Card key={book.id} className="flex flex-col overflow-hidden hover:border-accent/40 transition-colors">
-            <BookCover book={book} />
-            <CardContent className="flex flex-col flex-1 p-4 gap-2">
-              <div className="flex-1">
-                <p className="font-semibold text-text-primary text-sm leading-snug line-clamp-2">{book.title}</p>
-                <p className="text-xs text-text-secondary mt-1">{book.author}</p>
-                <p className="text-xs text-text-secondary mt-0.5">
-                  {book.categoryName}{book.publishedYear ? ` · ${book.publishedYear}` : ''}
-                </p>
-                {book.synopsis && (
-                  <p className="text-xs text-text-secondary leading-5 mt-2 line-clamp-3">{book.synopsis}</p>
-                )}
-                {book.subjects && book.subjects.length > 0 && (
-                  <div className="mt-2 flex flex-wrap gap-1.5">
-                    {book.subjects.slice(0, 3).map((subject) => (
-                      <Badge key={subject} variant="outline" className="text-[0.65rem]">{subject}</Badge>
-                    ))}
-                  </div>
-                )}
-              </div>
-              <div className="grid grid-cols-2 gap-2 text-[0.7rem] text-text-secondary">
-                <span className="flex items-center gap-1"><Star size={11} /> {book.ratingAverage ? `${book.ratingAverage.toFixed(1)}/5` : 'No rating'}</span>
-                <span className="flex items-center gap-1"><Library size={11} /> {book.editionCount || 0} editions</span>
-                <span className="col-span-2 truncate">{formatPopularity(book)}</span>
-              </div>
-              <div className="flex items-center justify-between mt-2">
-                <Badge variant={book.availableCopies > 0 ? 'secondary' : 'destructive'} className="text-xs">
-                  {book.availableCopies > 0 ? `${book.availableCopies} available` : 'Unavailable'}
-                </Badge>
-              </div>
+            <Link
+              to={`/portal/books/${book.id}`}
+              className="flex flex-1 flex-col outline-none focus-visible:ring-2 focus-visible:ring-accent/40"
+              aria-label={`View details for ${book.title}`}
+            >
+              <BookCover book={book} />
+              <CardContent className="flex flex-1 flex-col p-4 pb-2 gap-2">
+                <div className="flex-1">
+                  <p className="font-semibold text-text-primary text-sm leading-snug line-clamp-2 underline-offset-4 group-hover/card:text-accent group-hover/card:underline">{book.title}</p>
+                  <p className="text-xs text-text-secondary mt-1">{book.author}</p>
+                  <p className="text-xs text-text-secondary mt-0.5">
+                    {book.categoryName}{book.publishedYear ? ` · ${book.publishedYear}` : ''}
+                  </p>
+                  {book.synopsis && (
+                    <p className="text-xs text-text-secondary leading-5 mt-2 line-clamp-3">{book.synopsis}</p>
+                  )}
+                  {book.subjects && book.subjects.length > 0 && (
+                    <div className="mt-2 flex flex-wrap gap-1.5">
+                      {book.subjects.slice(0, 3).map((subject) => (
+                        <Badge key={subject} variant="outline" className="text-[0.65rem]">{subject}</Badge>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <div className="grid grid-cols-2 gap-2 text-[0.7rem] text-text-secondary">
+                  <span className="flex items-center gap-1"><Star size={11} /> {book.ratingAverage ? `${book.ratingAverage.toFixed(1)}/5` : 'No rating'}</span>
+                  <span className="flex items-center gap-1"><Library size={11} /> {book.editionCount || 0} editions</span>
+                  <span className="col-span-2 truncate">{formatPopularity(book)}</span>
+                </div>
+                <div className="flex items-center justify-between mt-2">
+                  <Badge variant={book.availableCopies > 0 ? 'secondary' : 'destructive'} className="text-xs">
+                    {book.availableCopies > 0 ? `${book.availableCopies} available` : 'Unavailable'}
+                  </Badge>
+                </div>
+              </CardContent>
+            </Link>
+            <CardContent className="p-4 pt-0">
               <Button
                 size="sm"
-                className="w-full gap-1.5 mt-1"
+                className="w-full gap-1.5"
                 disabled={book.availableCopies === 0}
                 onClick={() => setConfirmBook(book)}
               >
